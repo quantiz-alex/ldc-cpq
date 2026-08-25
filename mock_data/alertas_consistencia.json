@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "pedido_id": 5,
+    "tipo": "VolumetriaAtipica",
+    "descricao": "Quantidade solicitada está fora do padrão histórico do cliente para este produto.",
+    "severidade": "Baixa",
+    "resolvido_por": null,
+    "created_at": "2025-10-07T00:00:00",
+    "updated_at": "2026-02-19T00:00:00"
+  },
+  {
+    "id": 2,
+    "pedido_id": 25,
+    "tipo": "ProdutoAtipico",
+    "descricao": "Cliente nunca comprou este produto anteriormente.",
+    "severidade": "Media",
+    "resolvido_por": null,
+    "created_at": "2025-10-27T00:00:00",
+    "updated_at": "2026-02-19T00:00:00"
+  },
+  {
+    "id": 3,
+    "pedido_id": 8,
+    "tipo": "VolumetriaAtipica",
+    "descricao": "Quantidade solicitada está fora do padrão histórico do cliente para este produto.",
+    "severidade": "Alta",
+    "resolvido_por": "Fernanda Lopes",
+    "created_at": "2025-10-10T00:00:00",
+    "updated_at": "2026-02-19T00:00:00"
+  },
+  {
+    "id": 4,
+    "pedido_id": 13,
+    "tipo": "CondicaoDivergente",
+    "descricao": "Condição comercial informada diverge da política padrão para a região.",
+    "severidade": "Baixa",
+    "resolvido_por": "Fernanda Lopes",
+    "created_at": "2025-10-15T00:00:00",
+    "updated_at": "2026-02-19T00:00:00"
+  },
+  {
+    "id": 5,
+    "pedido_id": 24,
+    "tipo": "CondicaoDivergente",
+    "descricao": "Condição comercial informada diverge da política padrão para a região.",
+    "severidade": "Media",
+    "resolvido_por": "Ricardo Nunes",
+    "created_at": "2025-10-26T00:00:00",
+    "updated_at": "2026-02-19T00:00:00"
+  },
+  {
+    "id": 6,
+    "pedido_id": 7,
+    "tipo": "VolumetriaAtipica",
+    "descricao": "Quantidade solicitada está fora do padrão histórico do cliente para este produto.",
+    "severidade": "Baixa",
+    "resolvido_por": "Marcelo Andrade",
+    "created_at": "2025-10-09T00:00:00",
+    "updated_at": "2026-02-19T00:00:00"
+  },
+  {
+    "id": 7,
+    "pedido_id": 3,
+    "tipo": "VolumetriaAtipica",
+    "descricao": "Quantidade solicitada está fora do padrão histórico do cliente para este produto.",
+    "severidade": "Media",
+    "resolvido_por": null,
+    "created_at": "2025-10-05T00:00:00",
+    "updated_at": "2026-02-19T00:00:00"
+  },
+  {
+    "id": 8,
+    "pedido_id": 14,
+    "tipo": "VolumetriaAtipica",
+    "descricao": "Quantidade solicitada está fora do padrão histórico do cliente para este produto.",
+    "severidade": "Media",
+    "resolvido_por": "Fernanda Lopes",
+    "created_at": "2025-10-16T00:00:00",
+    "updated_at": "2026-02-19T00:00:00"
+  },
+  {
+    "id": 9,
+    "pedido_id": 18,
+    "tipo": "CondicaoDivergente",
+    "descricao": "Condição comercial informada diverge da política padrão para a região.",
+    "severidade": "Alta",
+    "resolvido_por": "Ricardo Nunes",
+    "created_at": "2025-10-20T00:00:00",
+    "updated_at": "2026-02-19T00:00:00"
+  },
+  {
+    "id": 10,
+    "pedido_id": 11,
+    "tipo": "CondicaoDivergente",
+    "descricao": "Condição comercial informada diverge da política padrão para a região.",
+    "severidade": "Alta",
+    "resolvido_por": null,
+    "created_at": "2025-10-13T00:00:00",
+    "updated_at": "2026-02-19T00:00:00"
+  },
+  {
+    "id": 11,
+    "pedido_id": 9,
+    "tipo": "CondicaoDivergente",
+    "descricao": "Condição comercial informada diverge da política padrão para a região.",
+    "severidade": "Baixa",
+    "resolvido_por": "Marcelo Andrade",
+    "created_at": "2025-10-11T00:00:00",
+    "updated_at": "2026-02-19T00:00:00"
+  },
+  {
+    "id": 12,
+    "pedido_id": 23,
+    "tipo": "VolumetriaAtipica",
+    "descricao": "Quantidade solicitada está fora do padrão histórico do cliente para este produto.",
+    "severidade": "Baixa",
+    "resolvido_por": "Fernanda Lopes",
+    "created_at": "2025-10-25T00:00:00",
+    "updated_at": "2026-02-19T00:00:00"
+  }
+]

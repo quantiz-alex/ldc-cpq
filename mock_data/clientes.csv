@@ -1,0 +1,31 @@
+id,nome,documento,regiao,cultura_principal,rtv_id,ativo,created_at,updated_at
+1,Agropecuária Bom Futuro,53.204.194/0001-58,Rondonópolis-MT,Soja,6,1,2025-05-26T00:00:00,2026-02-09T00:00:00
+2,Fazenda Santa Luzia,55.967.452/0001-87,Sinop-MT,Algodão,7,1,2025-05-27T00:00:00,2026-02-09T00:00:00
+3,Grupo Amaggi Filial,15.847.570/0001-78,Rio Verde-GO,Soja,8,1,2025-05-28T00:00:00,2026-02-09T00:00:00
+4,Fazenda Boa Vista,58.180.665/0001-47,Cristalina-GO,Cana-de-açúcar,9,1,2025-05-29T00:00:00,2026-02-09T00:00:00
+5,Cooperativa Coopervale,56.691.296/0001-18,Uberaba-MG,Soja,10,1,2025-05-30T00:00:00,2026-02-09T00:00:00
+6,Fazenda Três Irmãos,94.333.891/0001-47,Primavera do Leste-MT,Soja,11,1,2025-05-31T00:00:00,2026-02-09T00:00:00
+7,Agrícola Rio Claro,39.987.203/0001-58,Luís Eduardo Magalhães-BA,Algodão,12,1,2025-06-01T00:00:00,2026-02-09T00:00:00
+8,Fazenda Água Limpa,68.750.954/0001-56,Sorriso-MT,Milho,5,1,2025-06-02T00:00:00,2026-02-09T00:00:00
+9,Fazenda Cerrado Verde,57.463.314/0001-95,Rondonópolis-MT,Algodão,6,1,2025-06-03T00:00:00,2026-02-09T00:00:00
+10,Grupo Scheffer,99.799.763/0001-19,Sinop-MT,Cana-de-açúcar,7,1,2025-06-04T00:00:00,2026-02-09T00:00:00
+11,Fazenda Progresso,91.275.646/0001-41,Rio Verde-GO,Milho,8,1,2025-06-05T00:00:00,2026-02-09T00:00:00
+12,Agropecuária Del Rey,69.488.376/0001-91,Cristalina-GO,Cana-de-açúcar,9,1,2025-06-06T00:00:00,2026-02-09T00:00:00
+13,Fazenda Novo Horizonte,38.801.432/0001-17,Uberaba-MG,Milho,10,1,2025-06-07T00:00:00,2026-02-09T00:00:00
+14,Fazenda Sant'Ana,14.924.423/0001-61,Primavera do Leste-MT,Algodão,11,1,2025-06-08T00:00:00,2026-02-09T00:00:00
+15,Cooperativa Cotrijal,18.316.680/0001-50,Luís Eduardo Magalhães-BA,Milho,12,1,2025-06-09T00:00:00,2026-02-09T00:00:00
+16,Fazenda Barra Grande,93.611.505/0001-92,Sorriso-MT,Soja/Milho (safrinha),5,1,2025-06-10T00:00:00,2026-02-09T00:00:00
+17,Fazenda Pontal,28.371.242/0001-41,Rondonópolis-MT,Cana-de-açúcar,6,1,2025-06-11T00:00:00,2026-02-09T00:00:00
+18,Agrícola Santa Fé,78.369.864/0001-84,Sinop-MT,Soja/Milho (safrinha),7,1,2025-06-12T00:00:00,2026-02-09T00:00:00
+19,Fazenda Boa Esperança,84.508.470/0001-38,Rio Verde-GO,Milho,8,1,2025-06-13T00:00:00,2026-02-09T00:00:00
+20,Grupo Bianchini,75.605.193/0001-16,Cristalina-GO,Soja,9,1,2025-06-14T00:00:00,2026-02-09T00:00:00
+21,Fazenda Colorado,29.742.263/0001-97,Uberaba-MG,Soja/Milho (safrinha),10,1,2025-06-15T00:00:00,2026-02-09T00:00:00
+22,Fazenda Marimbondo,86.165.494/0001-58,Primavera do Leste-MT,Cana-de-açúcar,11,1,2025-06-16T00:00:00,2026-02-09T00:00:00
+23,Agropecuária Planalto,69.641.357/0001-80,Luís Eduardo Magalhães-BA,Soja,12,1,2025-06-17T00:00:00,2026-02-09T00:00:00
+24,Fazenda Trindade,97.838.217/0001-97,Sorriso-MT,Cana-de-açúcar,5,1,2025-06-18T00:00:00,2026-02-09T00:00:00
+25,Fazenda São Judas,44.887.756/0001-53,Rondonópolis-MT,Soja,6,1,2025-06-19T00:00:00,2026-02-09T00:00:00
+26,Cooperativa Comigo,47.545.261/0001-68,Sinop-MT,Soja,7,1,2025-06-20T00:00:00,2026-02-09T00:00:00
+27,Fazenda Xingu,43.612.880/0001-32,Rio Verde-GO,Cana-de-açúcar,8,1,2025-06-21T00:00:00,2026-02-09T00:00:00
+28,Agrícola Vale do Sol,23.991.740/0001-48,Cristalina-GO,Cana-de-açúcar,9,1,2025-06-22T00:00:00,2026-02-09T00:00:00
+29,Fazenda Estrela Dalva,87.303.256/0001-57,Uberaba-MG,Milho,10,1,2025-06-23T00:00:00,2026-02-09T00:00:00
+30,Fazenda Ipê Roxo,79.897.643/0001-10,Primavera do Leste-MT,Cana-de-açúcar,11,1,2025-06-24T00:00:00,2026-02-09T00:00:00

@@ -1,0 +1,514 @@
+meta:
+  version: "1.0.0"
+  base_url: "/api/v1"
+  auth_required: true
+  content_type: "application/json"
+
+endpoints:
+  auth:
+    POST /auth/login:
+      description: "Autenticação — retorna access token JWT"
+      auth_required: false
+      request:
+        body:
+          email: {type: string, format: email, required: true}
+          password: {type: string, min_length: 6, required: true}
+      response:
+        200:
+          access_token: {type: string}
+          token_type: {type: string, example: "bearer"}
+          expires_in: {type: integer, example: 28800}
+        401:
+          detail: "Credenciais inválidas"
+
+    POST /auth/refresh:
+      description: "Renova o access token"
+      auth_required: true
+      response:
+        200:
+          access_token: {type: string}
+        401:
+          detail: "Token expirado ou inválido"
+
+  usuarios:
+    GET /usuarios:
+      description: "Lista usuários com paginação e filtros"
+      auth_required: true
+      query_params:
+        skip: {type: integer, default: 0}
+        limit: {type: integer, default: 100, max: 1000}
+        role: {type: string, required: false}
+        ativo: {type: boolean, required: false}
+      response:
+        200: {type: array, items: UsuarioResponse}
+        401: "Não autenticado"
+        403: "Sem permissão"
+    GET /usuarios/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {200: UsuarioResponse, 404: "Registro não encontrado"}
+    POST /usuarios:
+      description: "Cria usuário — somente admin (RN-016)"
+      auth_required: true
+      request: {body: UsuarioCreate}
+      response: {201: UsuarioResponse, 422: "Dados inválidos — email deve ser único no sistema (RN-017)"}
+    PUT /usuarios/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      request: {body: UsuarioUpdate}
+      response: {200: UsuarioResponse, 404: "Registro não encontrado", 422: "Dados inválidos"}
+    DELETE /usuarios/{id}:
+      description: "Soft delete — marca ativo=false. Somente admin (RN-016)"
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {204: "Deletado com sucesso", 404: "Registro não encontrado"}
+
+  produtos:
+    GET /produtos:
+      auth_required: true
+      query_params:
+        skip: {type: integer, default: 0}
+        limit: {type: integer, default: 100, max: 1000}
+        tipo: {type: string, required: false}
+        ativo: {type: boolean, required: false}
+      response: {200: {type: array, items: ProdutoResponse}, 401: "Não autenticado"}
+    GET /produtos/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {200: ProdutoResponse, 404: "Registro não encontrado"}
+    POST /produtos:
+      description: "Cria produto — somente admin (RN-016, manutenção de catálogo)"
+      auth_required: true
+      request: {body: ProdutoCreate}
+      response: {201: ProdutoResponse, 422: "Dados inválidos"}
+    PUT /produtos/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      request: {body: ProdutoUpdate}
+      response: {200: ProdutoResponse, 404: "Registro não encontrado", 422: "Dados inválidos"}
+    DELETE /produtos/{id}:
+      description: "Soft delete — marca ativo=false"
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {204: "Deletado com sucesso", 404: "Registro não encontrado"}
+
+  clientes:
+    GET /clientes:
+      auth_required: true
+      query_params:
+        skip: {type: integer, default: 0}
+        limit: {type: integer, default: 100, max: 1000}
+        regiao: {type: string, required: false}
+        rtv_id: {type: integer, required: false}
+        ativo: {type: boolean, required: false}
+      response: {200: {type: array, items: ClienteResponse}, 401: "Não autenticado. Escopo: RTV só vê própria carteira (RN-001/RN-014)"}
+    GET /clientes/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {200: ClienteResponse, 404: "Registro não encontrado"}
+    POST /clientes:
+      auth_required: true
+      request: {body: ClienteCreate}
+      response: {201: ClienteResponse, 422: "Dados inválidos"}
+    PUT /clientes/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      request: {body: ClienteUpdate}
+      response: {200: ClienteResponse, 404: "Registro não encontrado", 422: "Dados inválidos"}
+    DELETE /clientes/{id}:
+      description: "Soft delete — marca ativo=false"
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {204: "Deletado com sucesso", 404: "Registro não encontrado"}
+
+  precos-por-janela:
+    GET /precos-por-janela:
+      auth_required: true
+      query_params:
+        skip: {type: integer, default: 0}
+        limit: {type: integer, default: 100, max: 1000}
+        produto_id: {type: integer, required: false}
+        janela_mes: {type: integer, required: false}
+        janela_ano: {type: integer, required: false}
+        condicao_pagamento: {type: string, required: false}
+      response: {200: {type: array, items: PrecoPorJanelaResponse}, 401: "Não autenticado"}
+    GET /precos-por-janela/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {200: PrecoPorJanelaResponse, 404: "Registro não encontrado"}
+    POST /precos-por-janela:
+      description: "Somente admin (RN-016 — manutenção do catálogo/preços)"
+      auth_required: true
+      request: {body: PrecoPorJanelaCreate}
+      response: {201: PrecoPorJanelaResponse, 422: "Dados inválidos"}
+    PUT /precos-por-janela/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      request: {body: PrecoPorJanelaUpdate}
+      response: {200: PrecoPorJanelaResponse, 404: "Registro não encontrado", 422: "Dados inválidos"}
+    DELETE /precos-por-janela/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {204: "Deletado com sucesso", 404: "Registro não encontrado"}
+    GET /precos-por-janela/lookup:
+      description: "Lookup do preço vigente por produto + janela + condição comercial (RN-004) — usado pela Captação de Pedido para precificação automática, não persiste"
+      auth_required: true
+      query_params:
+        produto_id: {type: integer, required: true}
+        janela_mes: {type: integer, required: true}
+        janela_ano: {type: integer, required: true}
+        condicao_pagamento: {type: string, required: true}
+      response:
+        200: {preco_unitario: {type: number, format: decimal}, vigente_de: {type: string, format: date}, vigente_ate: {type: string, format: date}}
+        404: "Nenhum preço vigente encontrado para a combinação produto+janela+condição"
+
+  pedidos:
+    GET /pedidos:
+      auth_required: true
+      query_params:
+        skip: {type: integer, default: 0}
+        limit: {type: integer, default: 100, max: 1000}
+        status: {type: string, required: false}
+        rtv_id: {type: integer, required: false}
+        cliente_id: {type: integer, required: false}
+        data_pedido_de: {type: string, format: date, required: false}
+        data_pedido_ate: {type: string, format: date, required: false}
+      response: {200: {type: array, items: PedidoResponse}, 401: "Não autenticado. Escopo: RTV vê apenas própria carteira (RN-001)"}
+    GET /pedidos/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {200: PedidoResponse, 404: "Registro não encontrado"}
+    POST /pedidos:
+      description: "Cria pedido em status Rascunho"
+      auth_required: true
+      request: {body: PedidoCreate}
+      response: {201: PedidoResponse, 422: "Dados inválidos"}
+    PUT /pedidos/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      request: {body: PedidoUpdate}
+      response: {200: PedidoResponse, 404: "Registro não encontrado", 422: "Dados inválidos"}
+    DELETE /pedidos/{id}:
+      description: "Soft delete — não aplicável a pedidos com itens; usar apenas em Rascunho"
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {204: "Deletado com sucesso", 404: "Registro não encontrado"}
+    POST /pedidos/{id}/submit:
+      description: "RTV envia pedido para validação (Rascunho -> Pendente Aprovação). Valida campos obrigatórios (RN-003) e soma de janelas parceladas (RN-006) antes de mudar o status"
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response:
+        200: PedidoResponse
+        422: "Pedido incompleto não pode ser enviado para validação (RN-003) ou soma das quantidades parceladas difere da quantidade total do item (RN-006)"
+    POST /pedidos/{id}/approve:
+      description: "Trader aprova o pedido (RN-007). RTV não pode aprovar o próprio pedido (RN-009). Pedido só entra na contagem de receita após esta ação (RN-002)"
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      request:
+        body: {comentario: {type: string, required: false}}
+      response:
+        200: PedidoResponse
+        403: "Somente trader e admin podem aprovar pedidos (RN-007); RTV não pode aprovar seus próprios pedidos (RN-009)"
+    POST /pedidos/{id}/reject:
+      description: "Trader rejeita o pedido (RN-007). Comentário obrigatório (RN-008)"
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      request:
+        body: {comentario: {type: string, required: true}}
+      response:
+        200: PedidoResponse
+        403: "Somente trader e admin podem rejeitar pedidos (RN-007)"
+        422: "Comentário obrigatório para rejeição (RN-008)"
+    POST /pedidos/{id}/return:
+      description: "Trader devolve com questionamento (RN-007). Comentário obrigatório (RN-008). Pedido volta a Rascunho (RN-010)"
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      request:
+        body: {comentario: {type: string, required: true}}
+      response:
+        200: PedidoResponse
+        403: "Somente trader e admin podem devolver pedidos (RN-007)"
+        422: "Comentário obrigatório para devolução (RN-008)"
+
+  pedido-itens:
+    GET /pedido-itens:
+      auth_required: true
+      query_params:
+        skip: {type: integer, default: 0}
+        limit: {type: integer, default: 100, max: 1000}
+        pedido_id: {type: integer, required: false}
+        produto_id: {type: integer, required: false}
+      response: {200: {type: array, items: PedidoItemResponse}, 401: "Não autenticado"}
+    GET /pedido-itens/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {200: PedidoItemResponse, 404: "Registro não encontrado"}
+    POST /pedido-itens:
+      description: "Cria item de pedido. preco_unitario e subtotal são calculados via lookup em precos-por-janela (RN-004) — não editáveis manualmente sem permissão específica"
+      auth_required: true
+      request: {body: PedidoItemCreate}
+      response: {201: PedidoItemResponse, 422: "Dados inválidos ou soma de janelas parceladas diferente da quantidade total do item (RN-006)"}
+    PUT /pedido-itens/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      request: {body: PedidoItemUpdate}
+      response: {200: PedidoItemResponse, 404: "Registro não encontrado", 422: "Dados inválidos"}
+    DELETE /pedido-itens/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {204: "Deletado com sucesso", 404: "Registro não encontrado"}
+
+  alertas-consistencia:
+    GET /alertas-consistencia:
+      auth_required: true
+      query_params:
+        skip: {type: integer, default: 0}
+        limit: {type: integer, default: 100, max: 1000}
+        pedido_id: {type: integer, required: false}
+        severidade: {type: string, required: false}
+        tipo: {type: string, required: false}
+      response: {200: {type: array, items: AlertaConsistenciaResponse}, 401: "Não autenticado"}
+    GET /alertas-consistencia/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {200: AlertaConsistenciaResponse, 404: "Registro não encontrado"}
+    POST /alertas-consistencia:
+      description: "Gerado automaticamente pela análise de consistência do pedido — normalmente não criado manualmente"
+      auth_required: true
+      request: {body: AlertaConsistenciaCreate}
+      response: {201: AlertaConsistenciaResponse, 422: "Dados inválidos"}
+    PUT /alertas-consistencia/{id}:
+      description: "Usado pelo trader para registrar resolvido_por ao decidir sobre um pedido com alerta (RN-011)"
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      request: {body: AlertaConsistenciaUpdate}
+      response: {200: AlertaConsistenciaResponse, 404: "Registro não encontrado", 422: "Dados inválidos"}
+    DELETE /alertas-consistencia/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {204: "Deletado com sucesso", 404: "Registro não encontrado"}
+
+  recomendacoes:
+    GET /recomendacoes:
+      description: "RTV só vê recomendações dos clientes de sua carteira (RN-014)"
+      auth_required: true
+      query_params:
+        skip: {type: integer, default: 0}
+        limit: {type: integer, default: 100, max: 1000}
+        cliente_id: {type: integer, required: false}
+        produto_id: {type: integer, required: false}
+        motivo: {type: string, required: false}
+        aceita: {type: boolean, required: false}
+      response: {200: {type: array, items: RecomendacaoResponse}, 401: "Não autenticado"}
+    GET /recomendacoes/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {200: RecomendacaoResponse, 404: "Registro não encontrado"}
+    POST /recomendacoes:
+      description: "Gerado automaticamente pelo motor de score (RN-013) — nunca cria pedido (RN-012)"
+      auth_required: true
+      request: {body: RecomendacaoCreate}
+      response: {201: RecomendacaoResponse, 422: "Dados inválidos"}
+    PUT /recomendacoes/{id}:
+      description: "Usado para marcar aceita=true quando o RTV adiciona a sugestão ao pedido"
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      request: {body: RecomendacaoUpdate}
+      response: {200: RecomendacaoResponse, 404: "Registro não encontrado", 422: "Dados inválidos"}
+    DELETE /recomendacoes/{id}:
+      auth_required: true
+      path_params: {id: {type: integer, required: true}}
+      response: {204: "Deletado com sucesso", 404: "Registro não encontrado"}
+
+schemas:
+  UsuarioBase:
+    nome: {type: string, max_length: 100, required: true}
+    email: {type: string, format: email, max_length: 150, required: true}
+    role: {type: string, enum: [admin, trader, rtv], required: true}
+    rtv_territorio: {type: string, max_length: 100, required: false}
+  UsuarioCreate:
+    extends: UsuarioBase
+    password: {type: string, min_length: 6, required: true}
+  UsuarioUpdate:
+    extends: UsuarioBase
+    nome: {type: string, required: false}
+    email: {type: string, required: false}
+    role: {type: string, required: false}
+  UsuarioResponse:
+    extends: UsuarioBase
+    id: {type: integer}
+    ativo: {type: boolean}
+    created_at: {type: string, format: datetime}
+    updated_at: {type: string, format: datetime}
+
+  ProdutoBase:
+    nome_comercial: {type: string, max_length: 150, required: true}
+    tipo: {type: string, enum: [Defensivo, Fertilizante], required: true}
+    classe: {type: string, max_length: 80, required: false}
+    ingrediente_ativo: {type: string, max_length: 150, required: false}
+    unidade: {type: string, max_length: 20, required: true}
+    custo: {type: number, format: decimal, required: true}
+  ProdutoCreate:
+    extends: ProdutoBase
+  ProdutoUpdate:
+    extends: ProdutoBase
+    nome_comercial: {type: string, required: false}
+    tipo: {type: string, required: false}
+    unidade: {type: string, required: false}
+    custo: {type: number, required: false}
+  ProdutoResponse:
+    extends: ProdutoBase
+    id: {type: integer}
+    ativo: {type: boolean}
+    created_at: {type: string, format: datetime}
+    updated_at: {type: string, format: datetime}
+
+  ClienteBase:
+    nome: {type: string, max_length: 150, required: true}
+    documento: {type: string, max_length: 20, required: true}
+    regiao: {type: string, max_length: 100, required: true}
+    cultura_principal: {type: string, max_length: 100, required: false}
+    rtv_id: {type: integer, required: true}
+  ClienteCreate:
+    extends: ClienteBase
+  ClienteUpdate:
+    extends: ClienteBase
+    nome: {type: string, required: false}
+    documento: {type: string, required: false}
+    regiao: {type: string, required: false}
+    rtv_id: {type: integer, required: false}
+  ClienteResponse:
+    extends: ClienteBase
+    id: {type: integer}
+    ativo: {type: boolean}
+    created_at: {type: string, format: datetime}
+    updated_at: {type: string, format: datetime}
+
+  PrecoPorJanelaBase:
+    produto_id: {type: integer, required: true}
+    janela_mes: {type: integer, min: 1, max: 12, required: true}
+    janela_ano: {type: integer, required: true}
+    condicao_pagamento: {type: string, max_length: 50, required: true}
+    preco: {type: number, format: decimal, required: true}
+    vigente_de: {type: string, format: date, required: true}
+    vigente_ate: {type: string, format: date, required: false}
+  PrecoPorJanelaCreate:
+    extends: PrecoPorJanelaBase
+  PrecoPorJanelaUpdate:
+    extends: PrecoPorJanelaBase
+    preco: {type: number, required: false}
+    vigente_ate: {type: string, required: false}
+  PrecoPorJanelaResponse:
+    extends: PrecoPorJanelaBase
+    id: {type: integer}
+    created_at: {type: string, format: datetime}
+    updated_at: {type: string, format: datetime}
+
+  PedidoBase:
+    cliente_id: {type: integer, required: true}
+    rtv_id: {type: integer, required: true}
+    cultura_safra: {type: string, max_length: 100, required: false}
+    canal_origem: {type: string, enum: [WhatsApp, Email, Imagem, Manual], required: true}
+    observacoes: {type: string, required: false}
+  PedidoCreate:
+    extends: PedidoBase
+  PedidoUpdate:
+    extends: PedidoBase
+    cliente_id: {type: integer, required: false}
+    canal_origem: {type: string, required: false}
+  PedidoResponse:
+    extends: PedidoBase
+    id: {type: integer}
+    valor_total: {type: number, format: decimal}
+    status: {type: string, enum: ["Rascunho", "Pendente Aprovação", "Aprovado", "Rejeitado", "Devolvido"]}
+    aprovado_por: {type: string, required: false}
+    aprovado_em: {type: string, format: datetime, required: false}
+    comentario_aprovacao: {type: string, required: false}
+    created_at: {type: string, format: datetime}
+    updated_at: {type: string, format: datetime}
+
+  PedidoItemBase:
+    pedido_id: {type: integer, required: true}
+    produto_id: {type: integer, required: true}
+    quantidade: {type: number, format: decimal, required: true}
+    unidade: {type: string, max_length: 20, required: true}
+    janela_mes: {type: integer, min: 1, max: 12, required: true}
+    janela_ano: {type: integer, required: true}
+    formato_entrega: {type: string, max_length: 50, required: true}
+    local_entrega: {type: string, max_length: 150, required: true}
+    condicao_pagamento: {type: string, max_length: 50, required: true}
+  PedidoItemCreate:
+    extends: PedidoItemBase
+  PedidoItemUpdate:
+    extends: PedidoItemBase
+    quantidade: {type: number, required: false}
+    janela_mes: {type: integer, required: false}
+    janela_ano: {type: integer, required: false}
+  PedidoItemResponse:
+    extends: PedidoItemBase
+    id: {type: integer}
+    preco_unitario: {type: number, format: decimal}
+    subtotal: {type: number, format: decimal}
+    created_at: {type: string, format: datetime}
+    updated_at: {type: string, format: datetime}
+
+  AlertaConsistenciaBase:
+    pedido_id: {type: integer, required: true}
+    tipo: {type: string, enum: [ProdutoAtipico, VolumetriaAtipica, CondicaoDivergente], required: true}
+    descricao: {type: string, required: true}
+    severidade: {type: string, enum: [Baixa, Media, Alta], required: true}
+  AlertaConsistenciaCreate:
+    extends: AlertaConsistenciaBase
+  AlertaConsistenciaUpdate:
+    resolvido_por: {type: string, max_length: 100, required: false}
+  AlertaConsistenciaResponse:
+    extends: AlertaConsistenciaBase
+    id: {type: integer}
+    resolvido_por: {type: string, required: false}
+    created_at: {type: string, format: datetime}
+    updated_at: {type: string, format: datetime}
+
+  RecomendacaoBase:
+    cliente_id: {type: integer, required: true}
+    produto_id: {type: integer, required: true}
+    motivo: {type: string, enum: [Historico, Sazonalidade, MixRegional], required: true}
+  RecomendacaoCreate:
+    extends: RecomendacaoBase
+    score: {type: number, format: decimal, required: true}
+    gerada_em: {type: string, format: datetime, required: true}
+  RecomendacaoUpdate:
+    aceita: {type: boolean, required: false}
+  RecomendacaoResponse:
+    extends: RecomendacaoBase
+    id: {type: integer}
+    score: {type: number, format: decimal}
+    aceita: {type: boolean}
+    gerada_em: {type: string, format: datetime}
+    created_at: {type: string, format: datetime}
+    updated_at: {type: string, format: datetime}
+
+error_responses:
+  400:
+    detail: string
+  401:
+    detail: "Não autenticado — forneça um Bearer token válido"
+  403:
+    detail: "Sem permissão para esta operação"
+  404:
+    detail: "Registro não encontrado"
+  422:
+    detail: array
+  500:
+    detail: "Erro interno do servidor"
+
+pagination:
+  strategy: offset_limit
+  default_limit: 100
+  max_limit: 1000
+  response_headers:
+    X-Total-Count: integer
+    X-Page-Size: integer
+
+versioning:
+  strategy: url_prefix
+  current: "v1"

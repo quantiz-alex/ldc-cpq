@@ -1,0 +1,151 @@
+workflows:
+  captacao_aprovacao_flow:
+    name: "Fluxo de Captação e Validação de Pedido"
+    description: >
+      Jornada do RTV desde a captação do pedido até a validação pelo trader e
+      reflexo no dashboard comercial.
+    user_roles: [rtv, trader, admin]
+    category: implementação
+    steps:
+      - id: capturar_pedido
+        screen: captacao-pedido
+        description: "RTV registra cliente, itens e condições comerciais do pedido"
+        icon: cart-plus
+        inputs: []
+        outputs: [pedido_id, status]
+        next_actions:
+          - label: "Enviar para Validação"
+            target: fila-validacao
+            icon: send
+            primary: true
+            context_transfer: [pedido_id]
+            condition: "status == 'Pendente Aprovação'"
+            roles: [rtv, admin]
+
+      - id: validar_pedido
+        screen: fila-validacao
+        description: "Trader avalia o pedido, considera alertas de consistência e decide"
+        icon: check2-circle
+        inputs: [pedido_id]
+        outputs: [status_aprovacao, comentario_aprovacao, aprovado_por]
+        next_actions:
+          - label: "Ver Dashboard Atualizado"
+            target: dashboard
+            icon: speedometer2
+            primary: true
+            context_transfer: [pedido_id, status_aprovacao]
+            condition: "status_aprovacao == 'Aprovado'"
+            roles: [trader, admin]
+          - label: "Revisar Pedido"
+            target: captacao-pedido
+            icon: pencil
+            primary: false
+            context_transfer: [pedido_id, comentario_aprovacao]
+            condition: "status_aprovacao == 'Devolvido'"
+            roles: [rtv, admin]
+
+      - id: monitorar_dashboard
+        screen: dashboard
+        description: "Trader/admin acompanha receita e volume refletindo pedidos aprovados"
+        icon: speedometer2
+        inputs: [pedido_id, status_aprovacao]
+        outputs: []
+        next_actions:
+          - label: "Nova Captação"
+            target: captacao-pedido
+            icon: plus-circle
+            primary: false
+            roles: [rtv, admin]
+
+  recomendacao_para_pedido_flow:
+    name: "Fluxo de Recomendação para Captação"
+    description: >
+      Jornada do RTV a partir de sugestões de cross-sell até a adição do produto
+      recomendado em um pedido — nunca criação automática (RN-012).
+    user_roles: [rtv, trader, admin]
+    category: inovação
+    steps:
+      - id: revisar_recomendacoes
+        screen: recomendacoes
+        description: "RTV revisa produtos sugeridos por cliente com score e justificativa"
+        icon: stars
+        inputs: []
+        outputs: [cliente_id, produto_id]
+        next_actions:
+          - label: "Adicionar ao Pedido"
+            target: captacao-pedido
+            icon: cart-plus
+            primary: true
+            context_transfer: [cliente_id, produto_id]
+            roles: [rtv, admin]
+
+      - id: capturar_com_recomendacao
+        screen: captacao-pedido
+        description: "RTV confirma a inclusão manual do item recomendado no pedido"
+        icon: cart-plus
+        inputs: [cliente_id, produto_id]
+        outputs: [pedido_id]
+        next_actions:
+          - label: "Ver Outras Recomendações"
+            target: recomendacoes
+            icon: stars
+            primary: false
+            roles: [rtv, admin]
+
+  reporting_flow:
+    name: "Fluxo de Análise e Relatórios"
+    description: "Do dashboard consolidado ao relatório exportável detalhado por período/RTV/região."
+    user_roles: [rtv, trader, admin]
+    category: controle
+    steps:
+      - id: dashboard_step
+        screen: dashboard
+        description: "Visão consolidada de KPIs e gráficos comerciais"
+        icon: speedometer2
+        inputs: []
+        outputs: [periodo, rtv, regiao]
+        next_actions:
+          - label: "Ver Relatório Detalhado"
+            target: relatorios
+            icon: file-earmark-bar-graph
+            primary: true
+            context_transfer: [periodo, rtv, regiao]
+            roles: [rtv, trader, admin]
+
+      - id: relatorio_step
+        screen: relatorios
+        description: "Relatório exportável de pedidos, receita e eficiência de triagem"
+        icon: file-earmark-bar-graph
+        inputs: [periodo, rtv, regiao]
+        outputs: []
+        next_actions:
+          - label: "Voltar ao Dashboard"
+            target: dashboard
+            icon: speedometer2
+            primary: false
+            roles: [rtv, trader, admin]
+
+screen_workflows:
+  captacao-pedido:
+    - workflow_id: captacao_aprovacao_flow
+      step_id: capturar_pedido
+    - workflow_id: recomendacao_para_pedido_flow
+      step_id: capturar_com_recomendacao
+
+  fila-validacao:
+    - workflow_id: captacao_aprovacao_flow
+      step_id: validar_pedido
+
+  dashboard:
+    - workflow_id: captacao_aprovacao_flow
+      step_id: monitorar_dashboard
+    - workflow_id: reporting_flow
+      step_id: dashboard_step
+
+  recomendacoes:
+    - workflow_id: recomendacao_para_pedido_flow
+      step_id: revisar_recomendacoes
+
+  relatorios:
+    - workflow_id: reporting_flow
+      step_id: relatorio_step

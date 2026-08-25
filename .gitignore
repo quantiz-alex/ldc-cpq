@@ -1,0 +1,37 @@
+# Ambiente
+.env
+.env.local
+.env.*.local
+
+# Banco de dados SQLite (desenvolvimento)
+*.db
+*.db-shm
+*.db-wal
+
+# Build artifacts
+.build/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Mock data (opcional — remover se quiser versionar)
+# mock_data/
+
+# Reports
+validation_reports/
+tests/reports/
+
+# Ambientes virtuais Python
+venv/
+.venv/
+env/
+ENV/
+
+# IDE / SO
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

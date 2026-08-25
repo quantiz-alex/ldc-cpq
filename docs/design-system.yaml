@@ -1,0 +1,117 @@
+version: "1.0.0"
+project: "LDC Insumos — Plataforma Comercial (CPQ Inteligente)"
+
+colors:
+  page: "#f8fafc"
+  surface: "#ffffff"
+  border: "#e2e8f0"
+  sidebar_bg: "#ffffff"
+  sidebar_border: "#e2e8f0"
+  sidebar_text: "#4b5563"
+  primary: "#1045C8"
+  success: "#166534"
+  warning: "#92400e"
+  danger: "#991b1b"
+  info: "#1e40af"
+  text_strong: "#1e293b"
+  text: "#374151"
+  text_muted: "#64748b"
+  text_faint: "#94a3b8"
+
+typography:
+  font_family: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+  font_mono: "monospace"
+  sizes:
+    xs: "0.7rem"
+    sm: "0.75rem"
+    base: "0.875rem"
+    lg: "1rem"
+    xl: "1.25rem"
+    "2xl": "1.5rem"
+    "3xl": "1.875rem"
+    "4xl": "2.25rem"
+  weights:
+    normal: 400
+    medium: 500
+    semibold: 600
+    bold: 700
+
+spacing:
+  0: "0"
+  1: "0.25rem"
+  2: "0.5rem"
+  3: "1rem"
+  4: "1.5rem"
+  5: "3rem"
+
+layout:
+  sidebar_width: "240px"
+  page_padding_x: "1.5rem"
+  page_padding_y: "1rem"
+
+components:
+  card:
+    class: "shadow-sm border-0 mb-3"
+    header_class: "bg-white border-bottom fw-semibold"
+  kpi_card:
+    class: "shadow-sm border-0 border-start border-4 mb-3 h-100"
+    value_font: "monospace"
+  filter_card:
+    body_class: "py-2"
+    row_class: "g-2 align-items-end"
+  button_primary:
+    color: "primary"
+    class: "fw-bold"
+  badge:
+    pill_radius: "20px"
+    status_map:
+      Rascunho: secondary
+      "Pendente Aprovação": warning
+      Pendente: warning
+      Aprovado: success
+      Rejeitado: danger
+      Devolvido: danger
+
+ag_grid:
+  theme: "ag-theme-alpine"
+  floating_filter: true
+  suppress_menu: true
+  row_height: 44
+  header_height: 44
+  page_size: 20
+  page_size_options: [10, 20, 50, 100]
+
+plotly:
+  template: "plotly_white"
+  paper_bgcolor: "rgba(0,0,0,0)"
+  plot_bgcolor: "rgba(0,0,0,0)"
+  height: 300
+  color_sequence: ["#1045C8", "#10b981", "#f59e0b", "#ef4444", "#06b6d4"]
+
+id_conventions:
+  pattern: "<page>-<component>"
+  examples:
+    - "fila-validacao-grid"
+    - "fila-validacao-btn-aprovar"
+    - "captacao-pedido-grid-itens"
+
+naming:
+  pages_dir: "frontend/pages/<page>/"
+  files_per_page:
+    - "<page>_queries.py"
+    - "<page>_components.py"
+    - "<page>_page.py"
+    - "<page>_callbacks.py"
+
+restrictions:
+  - "Raiz de página deve ser html.Div(className='page-wrapper px-4 py-3'), NUNCA dbc.Container"
+  - "Nenhum framework JS, apenas Dash/dbc/dash_ag_grid/Plotly"
+  - "Nenhuma cor/valor solto fora dos tokens deste arquivo"
+  - "Colunas computed (logic_type: derived_field em business_logic.yaml) são calculadas em _queries.py via pandas, nunca lidas prontas do CSV mock"
+  - "screen_type: simulation e simulation_panel só quando existir regra logic_type: interactive_formula vinculada ao módulo"
+
+branding:
+  primary: "#1045C8"
+  logo: "assets/logo.png"
+  display_name: "LDC Insumos"
+  footer: "Desenvolvido por / Quantiz Pricing Solution"

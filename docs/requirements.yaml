@@ -1,0 +1,383 @@
+project:
+  name: "LDC Insumos — Plataforma Comercial (CPQ Inteligente)"
+  description: >
+    Plataforma comercial que digitaliza e automatiza o processo de captação, configuração,
+    precificação e cotação (CPQ) de pedidos de defensivos e fertilizantes da LDC Insumos.
+    Estrutura demandas dispersas (WhatsApp, e-mail, texto, imagem) em pedido padronizado,
+    aplica análises automáticas de consistência antes da validação pelo trader e recomenda
+    produtos com base em histórico e sazonalidade.
+
+roles:
+  - name: admin
+    description: "Acesso total — gerenciar usuários, configurações, catálogo de produtos e todos os módulos"
+    permissions: full
+  - name: trader
+    description: "Visualiza tudo, avalia pedidos, valida/questiona/aprova/rejeita demandas, precifica e libera cotações"
+    permissions: [visualizar, editar, aprovar, rejeitar, exportar-excel, drill-down]
+  - name: rtv
+    description: "Cria e edita pedidos, configura itens e condições comerciais, envia para validação do trader — não aprova nem exclui pedidos de terceiros"
+    permissions: [visualizar, criar, editar, exportar-excel]
+
+modules:
+  - name: "Dashboard Comercial"
+    description: >
+      Visão consolidada da operação comercial de insumos — volume de pedidos captados, receita,
+      mix defensivos × fertilizantes, status da fila de validação e desempenho por RTV/região.
+    priority: high
+    screen_type: dashboard
+    icon: speedometer2
+    kpis:
+      - "Pedidos captados no mês"
+      - "Receita acumulada (R$)"
+      - "Ticket médio (R$)"
+      - "Pedidos pendentes de validação"
+      - "Tempo médio de triagem do trader"
+      - "% de pedidos com alerta de inconsistência"
+    charts:
+      - {type: line, description: "Evolução de receita e volume de pedidos por semana, com quebra por linha (defensivos x fertilizantes)"}
+      - {type: bar, description: "Top RTVs por receita captada no período"}
+    filters:
+      - {field: data_pedido, type: date_range, options: []}
+      - {field: rtv, type: select, options: []}
+      - {field: regiao, type: select, options: []}
+      - {field: linha_produto, type: select, options: [Defensivos, Fertilizantes]}
+      - {field: status, type: select, options: [Rascunho, Pendente, Validado, Rejeitado]}
+    features:
+      - id: F-001
+        title: "Painel de acompanhamento comercial"
+        description: "Consolida KPIs e gráficos com atualização por filtro; permite drill-down do gráfico para a lista de pedidos correspondente"
+        actions: [visualizar, exportar-excel, drill-down]
+        acceptance_criteria: []
+      - id: F-002
+        title: "Monitor de fila de triagem"
+        description: "Destaca pedidos parados há mais tempo e pedidos com alerta de inconsistência, para priorização do trader"
+        actions: [visualizar, drill-down]
+        acceptance_criteria: []
+    access:
+      - {role: admin, permissions: full}
+      - {role: trader, permissions: [visualizar, exportar-excel, drill-down]}
+      - {role: rtv, permissions: [visualizar]}
+    business_rules:
+      - {id: RN-001, description: "KPIs e gráficos respeitam o escopo do usuário — RTV vê apenas sua própria carteira; trader e gestor veem toda a região sob sua responsabilidade", logic_type: null, formula_hint: null, variables_hint: null}
+      - {id: RN-002, description: "Pedido só entra na contagem de receita após validação do trader", logic_type: null, formula_hint: null, variables_hint: null}
+
+  - name: "Captação de Pedido (CPQ)"
+    description: >
+      Coração do sistema. Tela onde o RTV registra o pedido do cliente — seleciona cliente,
+      adiciona produtos, preenche condições comerciais obrigatórias e o preço é calculado
+      automaticamente em função do produto, janela de entrega e condições. Inclui captura
+      assistida a partir de mensagens recebidas.
+    priority: high
+    screen_type: mixed
+    icon: cart-plus
+    kpis: []
+    charts: []
+    filters: []
+    features:
+      - id: F-003
+        title: "Registrar pedido manual"
+        description: "Preencher cabeçalho, itens e condições comerciais e enviar para validação"
+        actions: [criar, editar, submit_approval]
+        acceptance_criteria: []
+      - id: F-004
+        title: "Captura assistida por mensagem"
+        description: "Importar demanda de texto/imagem/e-mail e converter em rascunho de pedido para revisão"
+        actions: [importar-mensagem, criar]
+        acceptance_criteria: []
+      - id: F-005
+        title: "Precificação automática por janela"
+        description: "Recalcula o preço unitário conforme a janela de entrega escolhida e as condições comerciais"
+        actions: [visualizar]
+        acceptance_criteria: []
+      - id: F-006
+        title: "Entrega parcelada por item"
+        description: "Dividir a quantidade de um item em múltiplas janelas de entrega, cada uma com seu preço"
+        actions: [criar, editar]
+        acceptance_criteria: []
+    access:
+      - {role: admin, permissions: full}
+      - {role: trader, permissions: [visualizar, editar, precificar]}
+      - {role: rtv, permissions: [criar, editar, importar-mensagem, submit_approval]}
+    business_rules:
+      - {id: RN-003, description: "Campos obrigatórios para envio — cliente, ao menos 1 item, quantidade, janela de entrega, formato de entrega, prazo de pagamento e local de entrega. Pedido incompleto não pode ser enviado para validação", logic_type: null, formula_hint: null, variables_hint: null}
+      - {id: RN-004, description: "O preço unitário é sempre função de produto + janela de entrega + condição comercial; não é possível editar o preço manualmente sem permissão específica", logic_type: null, formula_hint: null, variables_hint: null}
+      - {id: RN-005, description: "A captura assistida nunca cria pedido diretamente — sempre gera rascunho que exige revisão e confirmação humana do RTV", logic_type: null, formula_hint: null, variables_hint: null}
+      - {id: RN-006, description: "A soma das quantidades parceladas por janela deve ser igual à quantidade total do item", logic_type: null, formula_hint: null, variables_hint: null}
+
+  - name: "Fila de Validação do Trader"
+    description: >
+      Fila onde o trader avalia os pedidos enviados pelos RTVs, com alertas de consistência já
+      sinalizados, permitindo aprovar, rejeitar ou devolver com questionamento.
+    priority: high
+    screen_type: approval_queue
+    icon: check2-circle
+    kpis:
+      - "Pendentes"
+      - "Aprovados hoje"
+      - "Rejeitados/Devolvidos hoje"
+      - "Tempo médio de validação"
+    charts: []
+    filters:
+      - {field: status, type: select, options: [Pendente, Aprovado, Rejeitado, Devolvido]}
+      - {field: rtv, type: select, options: []}
+      - {field: com_alerta, type: select, options: [Sim, Não]}
+      - {field: data_envio, type: date_range, options: []}
+    features:
+      - id: F-007
+        title: "Aprovar pedido"
+        description: "Validar e liberar o pedido para cotação/efetivação, com comentário opcional"
+        actions: [approve]
+        acceptance_criteria: []
+      - id: F-008
+        title: "Rejeitar pedido"
+        description: "Recusar com comentário obrigatório"
+        actions: [reject]
+        acceptance_criteria: []
+      - id: F-009
+        title: "Devolver com questionamento"
+        description: "Devolver ao RTV pedindo confirmação/ajuste, com comentário obrigatório"
+        actions: [return_to_author]
+        acceptance_criteria: []
+      - id: F-010
+        title: "Consultar histórico de validações"
+        description: "Auditar pedidos já avaliados"
+        actions: [visualizar, exportar-excel]
+        acceptance_criteria: []
+    access:
+      - {role: admin, permissions: full}
+      - {role: trader, permissions: [approve, reject, return_to_author, visualizar, exportar-excel]}
+      - {role: rtv, permissions: [visualizar]}
+    business_rules:
+      - {id: RN-007, description: "Somente trader e admin podem aprovar, rejeitar ou devolver pedidos", logic_type: null, formula_hint: null, variables_hint: null}
+      - {id: RN-008, description: "Rejeição e devolução exigem comentário", logic_type: null, formula_hint: null, variables_hint: null}
+      - {id: RN-009, description: "RTV não pode aprovar seus próprios pedidos", logic_type: null, formula_hint: null, variables_hint: null}
+      - {id: RN-010, description: "Pedido devolvido volta ao status Rascunho para edição do RTV e reenvio", logic_type: null, formula_hint: null, variables_hint: null}
+      - {id: RN-011, description: "Pedidos com alerta de inconsistência não são bloqueados, mas exigem que o trader registre a decisão explicitamente", logic_type: null, formula_hint: null, variables_hint: null}
+
+  - name: "Motor de Recomendação (Cross-sell)"
+    description: >
+      Módulo proativo que sugere produtos ao RTV com base no comportamento de compra do cliente,
+      sazonalidade da cultura/safra e mix típico da região.
+    priority: medium
+    screen_type: mixed
+    icon: stars
+    kpis:
+      - "Produtos recomendados aceitos (%)"
+      - "Receita incremental estimada por recomendação"
+      - "Cobertura da carteira com recomendação ativa"
+    charts:
+      - {type: bar, description: "Produtos mais recomendados no período e taxa de aceitação"}
+    filters:
+      - {field: cliente, type: select, options: []}
+      - {field: cultura_safra, type: select, options: []}
+      - {field: regiao, type: select, options: []}
+      - {field: linha_produto, type: select, options: []}
+    features:
+      - id: F-011
+        title: "Recomendações por cliente"
+        description: "Gerar lista de produtos sugeridos com justificativa e score, com opção de enviar direto para a captação de pedido"
+        actions: [visualizar, adicionar-ao-pedido, exportar-excel]
+        acceptance_criteria: []
+      - id: F-012
+        title: "Análise de sazonalidade"
+        description: "Mostrar a janela típica de compra de cada produto por cultura para orientar o timing da oferta"
+        actions: [visualizar]
+        acceptance_criteria: []
+    access:
+      - {role: admin, permissions: full}
+      - {role: trader, permissions: [visualizar, exportar-excel]}
+      - {role: rtv, permissions: [visualizar, adicionar-ao-pedido]}
+    business_rules:
+      - {id: RN-012, description: "Recomendações são sugestões e nunca criam pedido automaticamente", logic_type: null, formula_hint: null, variables_hint: null}
+      - {id: RN-013, description: "O score considera recência, frequência e volume histórico do cliente, além da sazonalidade da cultura", logic_type: null, formula_hint: null, variables_hint: null}
+      - {id: RN-014, description: "RTV só vê recomendações dos clientes de sua carteira", logic_type: null, formula_hint: null, variables_hint: null}
+
+  - name: "Relatórios Comerciais"
+    description: "Relatórios exportáveis de pedidos, receita, mix de produtos, desempenho de RTVs e taxa de aprovação/rejeição."
+    priority: medium
+    screen_type: report
+    icon: file-earmark-bar-graph
+    kpis: []
+    charts:
+      - {type: line, description: "Receita e volume por período, por linha e por RTV"}
+      - {type: bar, description: "Receita e volume por período, por linha e por RTV"}
+    filters:
+      - {field: periodo, type: date_range, options: []}
+      - {field: rtv, type: select, options: []}
+      - {field: regiao, type: select, options: []}
+      - {field: cliente, type: select, options: []}
+      - {field: linha_produto, type: select, options: []}
+    features:
+      - id: F-013
+        title: "Relatório de pedidos e receita"
+        description: "Filtrar, visualizar e exportar"
+        actions: [visualizar, exportar-excel, exportar-pdf]
+        acceptance_criteria: []
+      - id: F-014
+        title: "Relatório de eficiência de triagem"
+        description: "Tempo de ciclo, taxa de aprovação/rejeição/devolução e incidência de alertas"
+        actions: [visualizar, exportar-excel]
+        acceptance_criteria: []
+    access:
+      - {role: admin, permissions: full}
+      - {role: trader, permissions: [gerar, exportar]}
+      - {role: rtv, permissions: [gerar, exportar]}
+    business_rules:
+      - {id: RN-015, description: "Relatórios respeitam o escopo de carteira/região do usuário", logic_type: null, formula_hint: null, variables_hint: null}
+
+  - name: "Administração"
+    description: "Controle de usuários do sistema e do catálogo de produtos/preços."
+    priority: low
+    screen_type: grid
+    icon: people
+    kpis: []
+    charts: []
+    filters:
+      - {field: role, type: select, options: []}
+      - {field: ativo, type: select, options: [Sim, Não]}
+    features:
+      - id: F-015
+        title: "Gestão de usuários"
+        description: "Criar, editar e desativar usuários"
+        actions: [criar, editar, desativar]
+        acceptance_criteria: []
+      - id: F-016
+        title: "Manutenção de catálogo"
+        description: "Produtos, preços por janela e políticas comerciais"
+        actions: [criar, editar, importar-csv]
+        acceptance_criteria: []
+    access:
+      - {role: admin, permissions: full}
+    business_rules:
+      - {id: RN-016, description: "Somente admin pode criar ou desativar usuários e editar o catálogo/preços", logic_type: null, formula_hint: null, variables_hint: null}
+      - {id: RN-017, description: "Email deve ser único no sistema", logic_type: null, formula_hint: null, variables_hint: null}
+
+entities:
+  - name: Cliente
+    description: "Produtor rural ou revenda atendido pela LDC Insumos; base para histórico de compras, recomendação e análise de consistência"
+    module: "Captação de Pedido"
+    fields:
+      - {name: nome, type: "varchar(150)", nullable: false, notes: null}
+      - {name: documento, type: "varchar(20)", nullable: false, notes: null}
+      - {name: regiao, type: "varchar(100)", nullable: false, notes: null}
+      - {name: cultura_principal, type: "varchar(100)", nullable: true, notes: null}
+      - {name: rtv_responsavel, type: "varchar(100)", nullable: true, notes: null}
+      - {name: ativo, type: bit, nullable: false, notes: null}
+    relationships: ["tem muitos Pedidos", "atendido por um RTV (Usuarios)"]
+  - name: Produto
+    description: "SKU de defensivo ou fertilizante do catálogo da LDC (aprox. 90 SKUs); base para itens de pedido e precificação"
+    module: "Captação de Pedido, Administração"
+    fields:
+      - {name: nome_comercial, type: "varchar(150)", nullable: false, notes: null}
+      - {name: tipo, type: "enum(Defensivo,Fertilizante)", nullable: false, notes: null}
+      - {name: classe, type: "varchar(80)", nullable: true, notes: null}
+      - {name: ingrediente_ativo, type: "varchar(150)", nullable: true, notes: null}
+      - {name: unidade, type: "varchar(20)", nullable: false, notes: null}
+      - {name: custo, type: "decimal(15,2)", nullable: false, notes: null}
+      - {name: ativo, type: bit, nullable: false, notes: null}
+    relationships: ["aparece em muitos PedidoItem", "tem muitos PrecoPorJanela"]
+  - name: PrecoPorJanela
+    description: "Preço vigente de um produto para uma janela de entrega específica"
+    module: "Captação de Pedido, Administração"
+    fields:
+      - {name: produto_id, type: int, nullable: false, notes: "FK Produto"}
+      - {name: janela_mes, type: int, nullable: false, notes: null}
+      - {name: janela_ano, type: int, nullable: false, notes: null}
+      - {name: condicao_pagamento, type: "varchar(50)", nullable: false, notes: null}
+      - {name: preco, type: "decimal(15,2)", nullable: false, notes: null}
+      - {name: vigente_de, type: date, nullable: false, notes: null}
+      - {name: vigente_ate, type: date, nullable: true, notes: null}
+    relationships: ["pertence a Produto"]
+  - name: Pedido
+    description: "Pedido comercial captado pelo RTV, submetido à validação do trader"
+    module: "Captação de Pedido, Fila de Validação do Trader"
+    fields:
+      - {name: cliente_id, type: int, nullable: false, notes: "FK Cliente"}
+      - {name: rtv_id, type: int, nullable: false, notes: "FK Usuarios"}
+      - {name: cultura_safra, type: "varchar(100)", nullable: true, notes: null}
+      - {name: canal_origem, type: "enum(WhatsApp,Email,Imagem,Manual)", nullable: false, notes: null}
+      - {name: valor_total, type: "decimal(15,2)", nullable: false, notes: null}
+      - {name: observacoes, type: text, nullable: true, notes: null}
+      - {name: status, type: "enum(Rascunho,Pendente Aprovação,Aprovado,Rejeitado,Devolvido)", nullable: false, notes: "default Rascunho"}
+      - {name: aprovado_por, type: "varchar(100)", nullable: true, notes: null}
+      - {name: aprovado_em, type: datetime2, nullable: true, notes: null}
+      - {name: comentario_aprovacao, type: text, nullable: true, notes: null}
+    relationships: ["pertence a Cliente", "pertence a Usuarios (rtv_id)", "tem muitos PedidoItem", "tem muitos AlertaConsistencia"]
+  - name: PedidoItem
+    description: "Item do pedido, incluindo o parcelamento da entrega por janela"
+    module: "Captação de Pedido"
+    fields:
+      - {name: pedido_id, type: int, nullable: false, notes: "FK Pedido"}
+      - {name: produto_id, type: int, nullable: false, notes: "FK Produto"}
+      - {name: quantidade, type: "decimal(15,2)", nullable: false, notes: null}
+      - {name: unidade, type: "varchar(20)", nullable: false, notes: null}
+      - {name: janela_mes, type: int, nullable: false, notes: null}
+      - {name: janela_ano, type: int, nullable: false, notes: null}
+      - {name: formato_entrega, type: "varchar(50)", nullable: false, notes: null}
+      - {name: local_entrega, type: "varchar(150)", nullable: false, notes: null}
+      - {name: condicao_pagamento, type: "varchar(50)", nullable: false, notes: "adicionado no Step 2.7 — necessário para o lookup de preco (RN-004); corresponde ao 'prazo de pagamento' citado no bloco de condicoes comerciais do modulo Captacao de Pedido, ausente na secao Entidades de Dados original"}
+      - {name: preco_unitario, type: "decimal(15,2)", nullable: false, notes: null}
+      - {name: subtotal, type: "decimal(15,2)", nullable: false, notes: null}
+    relationships: ["pertence a Pedido", "referencia Produto"]
+  - name: AlertaConsistencia
+    description: "Registro dos alertas gerados automaticamente na análise do pedido"
+    module: "Captação de Pedido, Fila de Validação do Trader"
+    fields:
+      - {name: pedido_id, type: int, nullable: false, notes: "FK Pedido"}
+      - {name: tipo, type: "enum(ProdutoAtipico,VolumetriaAtipica,CondicaoDivergente)", nullable: false, notes: null}
+      - {name: descricao, type: text, nullable: false, notes: null}
+      - {name: severidade, type: "enum(Baixa,Media,Alta)", nullable: false, notes: null}
+      - {name: resolvido_por, type: "varchar(100)", nullable: true, notes: null}
+    relationships: ["pertence a Pedido"]
+  - name: Recomendacao
+    description: "Sugestão de produto gerada para um cliente com base em histórico e sazonalidade"
+    module: "Motor de Recomendação"
+    fields:
+      - {name: cliente_id, type: int, nullable: false, notes: "FK Cliente"}
+      - {name: produto_id, type: int, nullable: false, notes: "FK Produto"}
+      - {name: motivo, type: "enum(Historico,Sazonalidade,MixRegional)", nullable: false, notes: null}
+      - {name: score, type: "decimal(8,4)", nullable: false, notes: null}
+      - {name: aceita, type: bit, nullable: false, notes: "default 0"}
+      - {name: gerada_em, type: datetime2, nullable: false, notes: null}
+    relationships: ["pertence a Cliente", "referencia Produto"]
+  - name: Usuarios
+    description: "Usuários do sistema com autenticação JWT"
+    module: "Administração"
+    fields:
+      - {name: nome, type: "varchar(100)", nullable: false, notes: null}
+      - {name: email, type: "varchar(150)", nullable: false, notes: "único"}
+      - {name: senha_hash, type: "varchar(255)", nullable: false, notes: null}
+      - {name: role, type: "enum(admin,trader,rtv)", nullable: false, notes: null}
+      - {name: rtv_territorio, type: "varchar(100)", nullable: true, notes: null}
+      - {name: ativo, type: bit, nullable: false, notes: null}
+    relationships: ["um Usuario (rtv) atende muitos Clientes e cria muitos Pedidos"]
+
+business_rules:
+  - {id: RN-001, description: "KPIs e gráficos respeitam o escopo do usuário — RTV vê apenas sua própria carteira; trader e gestor veem toda a região sob sua responsabilidade", module: "Dashboard Comercial", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-002, description: "Pedido só entra na contagem de receita após validação do trader", module: "Dashboard Comercial", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-003, description: "Campos obrigatórios para envio — cliente, ao menos 1 item, quantidade, janela de entrega, formato de entrega, prazo de pagamento e local de entrega. Pedido incompleto não pode ser enviado para validação", module: "Captação de Pedido (CPQ)", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-004, description: "O preço unitário é sempre função de produto + janela de entrega + condição comercial; não é possível editar o preço manualmente sem permissão específica", module: "Captação de Pedido (CPQ)", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-005, description: "A captura assistida nunca cria pedido diretamente — sempre gera rascunho que exige revisão e confirmação humana do RTV", module: "Captação de Pedido (CPQ)", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-006, description: "A soma das quantidades parceladas por janela deve ser igual à quantidade total do item", module: "Captação de Pedido (CPQ)", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-007, description: "Somente trader e admin podem aprovar, rejeitar ou devolver pedidos", module: "Fila de Validação do Trader", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-008, description: "Rejeição e devolução exigem comentário", module: "Fila de Validação do Trader", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-009, description: "RTV não pode aprovar seus próprios pedidos", module: "Fila de Validação do Trader", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-010, description: "Pedido devolvido volta ao status Rascunho para edição do RTV e reenvio", module: "Fila de Validação do Trader", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-011, description: "Pedidos com alerta de inconsistência não são bloqueados, mas exigem que o trader registre a decisão explicitamente", module: "Fila de Validação do Trader", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-012, description: "Recomendações são sugestões e nunca criam pedido automaticamente", module: "Motor de Recomendação (Cross-sell)", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-013, description: "O score considera recência, frequência e volume histórico do cliente, além da sazonalidade da cultura", module: "Motor de Recomendação (Cross-sell)", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-014, description: "RTV só vê recomendações dos clientes de sua carteira", module: "Motor de Recomendação (Cross-sell)", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-015, description: "Relatórios respeitam o escopo de carteira/região do usuário", module: "Relatórios Comerciais", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-016, description: "Somente admin pode criar ou desativar usuários e editar o catálogo/preços", module: "Administração", logic_type: null, formula_hint: null, variables_hint: null}
+  - {id: RN-017, description: "Email deve ser único no sistema", module: "Administração", logic_type: null, formula_hint: null, variables_hint: null}
+
+non_functional:
+  performance: "Consultas < 3s com volume médio de dados (aprox. 90 SKUs, dezenas de RTVs, milhares de pedidos/safra)"
+  security: "JWT com expiração de 8h, senhas com bcrypt, HTTPS em produção"
+  scalability: "Suporte a ~250 usuários simultâneos (33 RTVs + mais de 200 vendedores habilitados)"
+  availability: "Disponível em horário comercial estendido, 6h–20h (janela de plantio/safra)"
+
+integrations:
+  - {name: "Microsoft Dynamics CRM", type: api, description: "Sincronização de clientes e carteira dos RTVs. No mockup, simulada com dados de exemplo."}
+  - {name: SAP, type: database, description: "Origem de catálogo de produtos, preços e efetivação do pedido aprovado. No mockup, simulada."}
+  - {name: "Canais de entrada de demanda (WhatsApp/E-mail)", type: file, description: "Captura de mensagens para a funcionalidade de captura assistida. No mockup, entrada manual de texto/imagem."}

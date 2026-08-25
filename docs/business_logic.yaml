@@ -1,0 +1,321 @@
+version: "1.0.0"
+
+rules:
+  - id: RN-001
+    source_rule_ids: [RN-001]
+    module: "Dashboard Comercial"
+    entity: pedidos
+    logic_type: workflow_rule
+    parsed: false
+    raw_description: "KPIs e gráficos respeitam o escopo do usuário — RTV vê apenas sua própria carteira; trader e gestor veem toda a região sob sua responsabilidade"
+    description: "Filtro de escopo de leitura (RBAC) aplicado a KPIs/gráficos do dashboard"
+    workflow:
+      trigger_action: visualizar
+      condition: "role=rtv -> pedidos.rtv_id = usuario_logado.id; role in (trader, admin) -> pedidos.cliente_id IN (clientes WHERE regiao = 'região sob responsabilidade do usuário')"
+      roles_allowed: [rtv, trader, admin]
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: grid_column
+      chart_hint: none
+
+  - id: RN-002
+    source_rule_ids: [RN-002]
+    module: "Dashboard Comercial"
+    entity: pedidos
+    logic_type: workflow_rule
+    parsed: true
+    raw_description: "Pedido só entra na contagem de receita após validação do trader"
+    description: "KPIs de receita (Receita acumulada, Ticket médio) somam pedidos.valor_total apenas quando status = Aprovado"
+    workflow:
+      trigger_action: approve
+      condition: "pedidos.status == 'Aprovado' => incluir valor_total na agregação de receita; Rascunho/Pendente Aprovação/Rejeitado/Devolvido são excluídos do KPI"
+      roles_allowed: [trader, admin]
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: grid_column
+      chart_hint: none
+
+  - id: RN-003
+    source_rule_ids: [RN-003]
+    module: "Captação de Pedido (CPQ)"
+    entity: pedidos
+    logic_type: validation
+    parsed: true
+    raw_description: "Campos obrigatórios para envio — cliente, ao menos 1 item, quantidade, janela de entrega, formato de entrega, prazo de pagamento e local de entrega. Pedido incompleto não pode ser enviado para validação"
+    description: "Validação de completude do pedido antes do envio para o trader"
+    validation:
+      field: "pedidos.cliente_id, pedido_itens[] (>=1), pedido_itens.quantidade, pedido_itens.janela_mes/janela_ano, pedido_itens.formato_entrega, pedido_itens.condicao_pagamento, pedido_itens.local_entrega"
+      condition: "cliente_id IS NOT NULL AND COUNT(pedido_itens WHERE pedido_id=:id) >= 1 AND todos os pedido_itens têm quantidade, janela_mes, janela_ano, formato_entrega, condicao_pagamento e local_entrega preenchidos"
+      error_message: "Pedido incompleto — preencha cliente, ao menos 1 item, quantidade, janela de entrega, formato de entrega, prazo de pagamento e local de entrega antes de enviar para validação"
+      severity: block
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: form_field
+      chart_hint: none
+
+  - id: RN-004
+    source_rule_ids: [RN-004]
+    module: "Captação de Pedido (CPQ)"
+    entity: pedido_itens
+    logic_type: derived_field
+    parsed: true
+    raw_description: "O preço unitário é sempre função de produto + janela de entrega + condição comercial; não é possível editar o preço manualmente sem permissão específica"
+    description: "Precificação automática por fórmula (preco_base do produto × % fixo por condição de pagamento × % fixo por janela/safra); não é uma fórmula ajustável por slider — os percentuais são parâmetros travados (CONDICAO_PAGAMENTO_PCT / _MESES_PICO_SAFRA em captacao_pedido_queries.py), não editáveis pelo RTV, garantindo que todo produto ativo sempre tenha preço calculável"
+    formula:
+      expression: "preco_unitario = produtos.preco_base × (1 + CONDICAO_PAGAMENTO_PCT[pedido_itens.condicao_pagamento]) × (1 + (0.05 SE pedido_itens.janela_mes em {2,3,4,9,10,11} SENÃO 0)); subtotal = quantidade * preco_unitario"
+      variables:
+        - {name: produto_id, source: entity_field, field: "pedido_itens.produto_id", type: select, interactive: false, interaction_hint: select}
+        - {name: janela_mes, source: entity_field, field: "pedido_itens.janela_mes", type: select, interactive: false, interaction_hint: select}
+        - {name: condicao_pagamento, source: entity_field, field: "pedido_itens.condicao_pagamento", type: select, interactive: false, interaction_hint: select}
+        - {name: quantidade, source: entity_field, field: "pedido_itens.quantidade", type: number, interactive: false, interaction_hint: input}
+      output_fields:
+        - {name: preco_unitario, type: currency, persist: true}
+        - {name: subtotal, type: currency, persist: true}
+    notes: "Edição manual do preço exige permissão específica (ação 'precificar', role trader/admin) — trata-se de um override administrativo pontual, não de um painel de simulação com slider de markup. A tela 'Captação de Pedido' não pede fórmula ajustável — os percentuais por condição de pagamento (À vista 0%, 30 dias +4%, 60 dias +7%, 90 dias +11%) e por janela de safra (pico +5%, entressafra 0%) são parâmetros fixos no código, portanto NÃO classificado como interactive_formula. janela_ano deixou de ser chave da fórmula (não afeta o valor, só o mês pesa)."
+    ui:
+      mode: passive
+      component_hint: computed_column
+      screen_hint: grid_column
+      chart_hint: none
+
+  - id: RN-005
+    source_rule_ids: [RN-005]
+    module: "Captação de Pedido (CPQ)"
+    entity: pedidos
+    logic_type: workflow_rule
+    parsed: true
+    raw_description: "A captura assistida nunca cria pedido diretamente — sempre gera rascunho que exige revisão e confirmação humana do RTV"
+    description: "Captura assistida (F-004) sempre grava em status Rascunho, nunca dispara submit_approval automaticamente"
+    workflow:
+      trigger_action: importar-mensagem
+      condition: "resultado da extração de texto/imagem grava pedidos.status = 'Rascunho'; transição para 'Pendente Aprovação' exige ação explícita submit_approval do RTV"
+      roles_allowed: [rtv, admin]
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: form_field
+      chart_hint: none
+
+  - id: RN-006
+    source_rule_ids: [RN-006]
+    module: "Captação de Pedido (CPQ)"
+    entity: pedido_itens
+    logic_type: validation
+    parsed: true
+    raw_description: "A soma das quantidades parceladas por janela deve ser igual à quantidade total do item"
+    description: "Validação de parcelamento de entrega — soma das linhas (mesmo produto, mesmo pedido) divididas por janela deve reconstituir a quantidade total do item"
+    validation:
+      field: "pedido_itens.quantidade"
+      condition: "SUM(pedido_itens.quantidade) WHERE pedido_id = :pedido_id AND produto_id = :produto_id (agrupando as linhas parceladas do mesmo item) == quantidade_total do item informada pelo RTV ao configurar o parcelamento (valor de referência da UI, não persistido como campo próprio no modelo — cada janela é uma linha de pedido_itens)"
+      error_message: "A soma das quantidades parceladas por janela deve ser igual à quantidade total do item"
+      severity: block
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: form_field
+      chart_hint: none
+
+  - id: RN-007
+    source_rule_ids: [RN-007]
+    module: "Fila de Validação do Trader"
+    entity: pedidos
+    logic_type: workflow_rule
+    parsed: true
+    raw_description: "Somente trader e admin podem aprovar, rejeitar ou devolver pedidos"
+    description: "Gate de role sobre as ações de decisão da fila de validação"
+    workflow:
+      trigger_action: "approve|reject|return_to_author"
+      condition: "usuario_logado.role IN ('trader','admin')"
+      roles_allowed: [trader, admin]
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: approval_bar
+      chart_hint: none
+
+  - id: RN-008
+    source_rule_ids: [RN-008]
+    module: "Fila de Validação do Trader"
+    entity: pedidos
+    logic_type: validation
+    parsed: true
+    raw_description: "Rejeição e devolução exigem comentário"
+    description: "Comentário obrigatório quando a decisão do trader é Rejeitado ou Devolvido"
+    validation:
+      field: "pedidos.comentario_aprovacao"
+      condition: "comentario_aprovacao IS NOT NULL AND LEN(TRIM(comentario_aprovacao)) > 0 quando ação IN (reject, return_to_author)"
+      error_message: "Comentário obrigatório para rejeitar ou devolver o pedido"
+      severity: block
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: approval_bar
+      chart_hint: none
+
+  - id: RN-009
+    source_rule_ids: [RN-009]
+    module: "Fila de Validação do Trader"
+    entity: pedidos
+    logic_type: workflow_rule
+    parsed: true
+    raw_description: "RTV não pode aprovar seus próprios pedidos"
+    description: "Bloqueio de auto-aprovação — o aprovador não pode ser o RTV autor do pedido"
+    workflow:
+      trigger_action: approve
+      condition: "usuario_logado.id != pedidos.rtv_id"
+      roles_allowed: [trader, admin]
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: approval_bar
+      chart_hint: none
+
+  - id: RN-010
+    source_rule_ids: [RN-010]
+    module: "Fila de Validação do Trader"
+    entity: pedidos
+    logic_type: workflow_rule
+    parsed: true
+    raw_description: "Pedido devolvido volta ao status Rascunho para edição do RTV e reenvio"
+    description: "Transição automática de status ao devolver o pedido"
+    workflow:
+      trigger_action: return_to_author
+      condition: "pedidos.status transiciona automaticamente para 'Rascunho' após return_to_author, habilitando edição pelo RTV e reenvio via submit_approval"
+      roles_allowed: [trader, admin]
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: approval_bar
+      chart_hint: none
+
+  - id: RN-011
+    source_rule_ids: [RN-011]
+    module: "Fila de Validação do Trader"
+    entity: pedidos
+    logic_type: workflow_rule
+    parsed: true
+    raw_description: "Pedidos com alerta de inconsistência não são bloqueados, mas exigem que o trader registre a decisão explicitamente"
+    description: "Alertas de consistência não impedem a decisão, mas exigem registro explícito do trader (sem aprovação automática/silenciosa quando há alerta aberto)"
+    workflow:
+      trigger_action: "approve|reject|return_to_author"
+      condition: "IF EXISTS (alertas_consistencia WHERE pedido_id = :id) THEN decisão (approve/reject/return_to_author) deve ser registrada explicitamente pelo trader — alertas não bloqueiam a ação, apenas impedem decisão automática"
+      roles_allowed: [trader, admin]
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: approval_bar
+      chart_hint: none
+
+  - id: RN-012
+    source_rule_ids: [RN-012]
+    module: "Motor de Recomendação (Cross-sell)"
+    entity: recomendacoes
+    logic_type: workflow_rule
+    parsed: true
+    raw_description: "Recomendações são sugestões e nunca criam pedido automaticamente"
+    description: "Recomendação nunca dispara criação automática de pedido/pedido_itens — exige ação explícita do RTV"
+    workflow:
+      trigger_action: adicionar-ao-pedido
+      condition: "recomendacoes.aceita só é marcado true e um pedido_itens só é criado a partir da sugestão mediante ação explícita 'adicionar-ao-pedido' do RTV na tela de Captação de Pedido"
+      roles_allowed: [rtv, admin]
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: grid_column
+      chart_hint: none
+
+  - id: RN-013
+    source_rule_ids: [RN-013]
+    module: "Motor de Recomendação (Cross-sell)"
+    entity: recomendacoes
+    logic_type: derived_field
+    parsed: false
+    raw_description: "O score considera recência, frequência e volume histórico do cliente, além da sazonalidade da cultura"
+    description: "Score de recomendação (recomendacoes.score) é calculado automaticamente a partir de recência + frequência + volume histórico de compras do cliente + sazonalidade da cultura — variáveis conceituais identificadas, mas o roadmap não especifica a fórmula/pesos de combinação (ex.: pesos relativos de cada fator, janela de recência em dias, normalização 0–1). Campos-fonte prováveis: recência/frequência/volume derivam de agregações sobre pedidos + pedido_itens (histórico de compras do cliente para o produto); sazonalidade não tem fonte de dados própria no modelo atual (nenhuma entidade de calendário/safra por cultura)."
+    notes: "NÃO inventada fórmula de pesos — necessário detalhar no roadmap.md a sub-seção estruturada (Tipo: derived_field / Fórmula / Variáveis de entrada) para RN-013 antes da implementação real do motor de recomendação. Até lá, output_field recomendacoes.score deve ser calculado por um serviço (backend/services/recomendacao.py) com placeholder documentado — nunca pré-computado no mock."
+    ui:
+      mode: passive
+      component_hint: computed_column
+      screen_hint: grid_column
+      chart_hint: none
+
+  - id: RN-014
+    source_rule_ids: [RN-014]
+    module: "Motor de Recomendação (Cross-sell)"
+    entity: recomendacoes
+    logic_type: workflow_rule
+    parsed: true
+    raw_description: "RTV só vê recomendações dos clientes de sua carteira"
+    description: "Filtro de escopo de leitura — recomendações visíveis apenas para clientes atendidos pelo RTV logado"
+    workflow:
+      trigger_action: visualizar
+      condition: "role=rtv -> recomendacoes.cliente_id IN (SELECT id FROM clientes WHERE rtv_id = usuario_logado.id); role in (trader, admin) -> sem restrição de carteira"
+      roles_allowed: [rtv, trader, admin]
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: grid_column
+      chart_hint: none
+
+  - id: RN-015
+    source_rule_ids: [RN-015]
+    module: "Relatórios Comerciais"
+    entity: pedidos
+    logic_type: workflow_rule
+    parsed: false
+    raw_description: "Relatórios respeitam o escopo de carteira/região do usuário"
+    description: "Filtro de escopo de leitura aplicado aos relatórios exportáveis"
+    workflow:
+      trigger_action: visualizar
+      condition: "role=rtv -> pedidos.rtv_id = usuario_logado.id; role in (trader, admin) -> pedidos.cliente_id IN (clientes WHERE regiao = 'região sob responsabilidade do usuário')"
+      roles_allowed: [rtv, trader, admin]
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: grid_column
+      chart_hint: none
+
+  - id: RN-016
+    source_rule_ids: [RN-016]
+    module: "Administração"
+    entity: usuarios
+    logic_type: workflow_rule
+    parsed: true
+    raw_description: "Somente admin pode criar ou desativar usuários e editar o catálogo/preços"
+    description: "Gate de role sobre criação/desativação de usuários e manutenção de catálogo (usuarios, produtos — inclui preco_base)"
+    workflow:
+      trigger_action: "criar|editar|desativar"
+      condition: "usuario_logado.role == 'admin' (aplica-se a usuarios e produtos)"
+      roles_allowed: [admin]
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: form_field
+      chart_hint: none
+
+  - id: RN-017
+    source_rule_ids: [RN-017]
+    module: "Administração"
+    entity: usuarios
+    logic_type: validation
+    parsed: true
+    raw_description: "Email deve ser único no sistema"
+    description: "Unicidade de email na criação/edição de usuário"
+    validation:
+      field: "usuarios.email"
+      condition: "NOT EXISTS (SELECT 1 FROM usuarios WHERE email = :email AND id != :id)"
+      error_message: "Email deve ser único no sistema"
+      severity: block
+    ui:
+      mode: passive
+      component_hint: badge
+      screen_hint: form_field
+      chart_hint: none
+
+confidence_summary:
+  total_rules: 17
+  parsed: 14
+  needs_review: [RN-001, RN-013, RN-015]

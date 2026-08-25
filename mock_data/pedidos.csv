@@ -1,0 +1,25 @@
+id,cliente_id,rtv_id,cultura_safra,canal_origem,valor_total,observacoes,status,aprovado_por,aprovado_em,comentario_aprovacao,created_at,updated_at
+3,10.0,7,Cana-de-açúcar 2025/2026,Manual,1664.9,,Rascunho,,,,2026-02-20T00:00:00,2026-02-20T00:00:00
+4,13.0,10,Milho 2025/2026,WhatsApp,93436.5,"Pedido captado via canal informal, revisado pelo RTV.",Devolvido,Fernanda Lopes,2026-03-03T18:32:43,Cliente nunca comprou este defensivo — favor confirmar quantidade antes de reenviar.,2026-02-27T18:32:43,2026-03-03T18:32:43
+5,16.0,5,Soja/Milho (safrinha) 2025/2026,Email,5991.9,"Pedido captado via canal informal, revisado pelo RTV.",Rascunho,,,,2026-03-07T13:05:27,2026-03-07T13:05:27
+6,19.0,8,Milho 2025/2026,Imagem,6910.57,"Pedido captado via canal informal, revisado pelo RTV.",Pendente Aprovação,,,,2026-03-15T07:38:10,2026-03-15T07:38:10
+7,22.0,11,Cana-de-açúcar 2025/2026,Manual,18833.62,,Aprovado,Marcelo Andrade,2026-03-26T02:10:54,Pedido consistente com o histórico do cliente. Aprovado.,2026-03-23T02:10:54,2026-03-26T02:10:54
+8,25.0,6,Soja 2025/2026,WhatsApp,60060.04,"Pedido captado via canal informal, revisado pelo RTV.",Rejeitado,Fernanda Lopes,2026-04-04T20:43:38,Condição comercial divergente do praticado para a região. Rejeitado.,2026-03-30T20:43:38,2026-04-04T20:43:38
+9,28.0,9,Cana-de-açúcar 2025/2026,Email,1357.22,"Pedido captado via canal informal, revisado pelo RTV.",Devolvido,Marcelo Andrade,2026-04-14T15:16:21,Cliente nunca comprou este defensivo — favor confirmar quantidade antes de reenviar.,2026-04-07T15:16:21,2026-04-14T15:16:21
+10,1.0,6,Soja 2025/2026,Imagem,8588.3,"Pedido captado via canal informal, revisado pelo RTV.",Rascunho,,,,2026-04-15T09:49:05,2026-04-15T09:49:05
+11,4.0,9,Cana-de-açúcar 2025/2026,Manual,20743.39,,Pendente Aprovação,,,,2026-04-23T04:21:49,2026-04-23T04:21:49
+12,7.0,12,Algodão 2025/2026,WhatsApp,73849.89,"Pedido captado via canal informal, revisado pelo RTV.",Aprovado,Fernanda Lopes,2026-05-06T22:54:32,Pedido consistente com o histórico do cliente. Aprovado.,2026-04-30T22:54:32,2026-05-06T22:54:32
+13,10.0,7,Cana-de-açúcar 2025/2026,Email,21139.67,"Pedido captado via canal informal, revisado pelo RTV.",Rejeitado,Fernanda Lopes,2026-05-16T17:27:16,Condição comercial divergente do praticado para a região. Rejeitado.,2026-05-08T17:27:16,2026-05-16T17:27:16
+14,13.0,10,Milho 2025/2026,Imagem,95989.75,"Pedido captado via canal informal, revisado pelo RTV.",Devolvido,Fernanda Lopes,2026-05-19T12:00:00,Cliente nunca comprou este defensivo — favor confirmar quantidade antes de reenviar.,2026-05-16T12:00:00,2026-05-19T12:00:00
+15,16.0,5,Soja/Milho (safrinha) 2025/2026,Manual,39173.76,,Rascunho,,,,2026-05-24T06:32:43,2026-05-24T06:32:43
+16,19.0,8,Milho 2025/2026,WhatsApp,74037.74,"Pedido captado via canal informal, revisado pelo RTV.",Pendente Aprovação,,,,2026-06-01T01:05:27,2026-06-01T01:05:27
+17,22.0,11,Cana-de-açúcar 2025/2026,Email,27217.65,"Pedido captado via canal informal, revisado pelo RTV.",Aprovado,Ricardo Nunes,2026-06-10T19:38:10,Pedido consistente com o histórico do cliente. Aprovado.,2026-06-08T19:38:10,2026-06-10T19:38:10
+18,25.0,6,Soja 2025/2026,Imagem,24590.76,"Pedido captado via canal informal, revisado pelo RTV.",Rejeitado,Ricardo Nunes,2026-06-20T14:10:54,Condição comercial divergente do praticado para a região. Rejeitado.,2026-06-16T14:10:54,2026-06-20T14:10:54
+19,28.0,9,Cana-de-açúcar 2025/2026,Manual,16168.52,"Pedido captado via canal informal, revisado pelo RTV.",Devolvido,Marcelo Andrade,2026-06-30T08:43:38,Cliente nunca comprou este defensivo — favor confirmar quantidade antes de reenviar.,2026-06-24T08:43:38,2026-06-30T08:43:38
+20,1.0,6,Soja 2025/2026,WhatsApp,3162.88,"Pedido captado via canal informal, revisado pelo RTV.",Rascunho,,,,2026-07-02T03:16:21,2026-07-02T03:16:21
+21,4.0,9,Cana-de-açúcar 2025/2026,Email,62647.58,"Pedido captado via canal informal, revisado pelo RTV.",Pendente Aprovação,,,,2026-07-09T21:49:05,2026-07-09T21:49:05
+22,7.0,12,Algodão 2025/2026,Imagem,14745.4,"Pedido captado via canal informal, revisado pelo RTV.",Aprovado,Marcelo Andrade,2026-07-22T16:21:49,Pedido consistente com o histórico do cliente. Aprovado.,2026-07-17T16:21:49,2026-07-22T16:21:49
+23,10.0,7,Cana-de-açúcar 2025/2026,Manual,1843.52,,Rejeitado,Fernanda Lopes,2026-08-01T10:54:32,Condição comercial divergente do praticado para a região. Rejeitado.,2026-07-25T10:54:32,2026-08-01T10:54:32
+24,13.0,10,Milho 2025/2026,WhatsApp,170277.5,"Pedido captado via canal informal, revisado pelo RTV.",Devolvido,Ricardo Nunes,2026-08-04T05:27:16,Cliente nunca comprou este defensivo — favor confirmar quantidade antes de reenviar.,2026-08-02T05:27:16,2026-08-04T05:27:16
+25,16.0,5,Soja/Milho (safrinha) 2025/2026,Email,4373.18,"Pedido captado via canal informal, revisado pelo RTV.",Rascunho,,,,2026-08-10T00:00:00,2026-08-10T00:00:00
+26,,1,,Imagem,0.0,[Captura assistida] Teste ,Rascunho,,,,2026-08-25T15:21:50,2026-08-25T15:21:50

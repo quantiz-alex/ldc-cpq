@@ -1,0 +1,13 @@
+id,nome,email,senha_hash,role,rtv_territorio,ativo,created_at,updated_at
+1,Administrador do Sistema,admin@ldc-cpq.com,$2b$12$KIXQ5Z0m8h9dQhq7f0m6yO0z8b8b9v9v9v9v9v9v9v9v9v9v9v9v9,admin,,1,2025-01-25T00:00:00,2026-02-19T00:00:00
+2,Marcelo Andrade,marcelo.andrade@ldc-cpq.com,$2b$12$abTraderHashPlaceholder0000000000000000000000000,trader,,1,2025-02-14T00:00:00,2026-02-09T00:00:00
+3,Fernanda Lopes,fernanda.lopes@ldc-cpq.com,$2b$12$abTraderHashPlaceholder0000000000000000000000000,trader,,1,2025-02-14T00:00:00,2026-02-09T00:00:00
+4,Ricardo Nunes,ricardo.nunes@ldc-cpq.com,$2b$12$abTraderHashPlaceholder0000000000000000000000000,trader,,1,2025-02-14T00:00:00,2026-02-09T00:00:00
+5,Carlos Eduardo Silva,carlos.eduardo.silva@ldc-cpq.com,$2b$12$abRtvHashPlaceholder000000000000000000000000000,rtv,Sorriso-MT,1,2025-03-16T00:00:00,2026-02-14T00:00:00
+6,Juliana Ramos,juliana.ramos@ldc-cpq.com,$2b$12$abRtvHashPlaceholder000000000000000000000000000,rtv,Rondonópolis-MT,1,2025-03-16T00:00:00,2026-02-14T00:00:00
+7,Bruno Tavares,bruno.tavares@ldc-cpq.com,$2b$12$abRtvHashPlaceholder000000000000000000000000000,rtv,Sinop-MT,1,2025-03-16T00:00:00,2026-02-14T00:00:00
+8,Patrícia Gomes,patricia.gomes@ldc-cpq.com,$2b$12$abRtvHashPlaceholder000000000000000000000000000,rtv,Rio Verde-GO,1,2025-03-16T00:00:00,2026-02-14T00:00:00
+9,Diego Martins,diego.martins@ldc-cpq.com,$2b$12$abRtvHashPlaceholder000000000000000000000000000,rtv,Cristalina-GO,1,2025-03-16T00:00:00,2026-02-14T00:00:00
+10,Camila Ferreira,camila.ferreira@ldc-cpq.com,$2b$12$abRtvHashPlaceholder000000000000000000000000000,rtv,Uberaba-MG,1,2025-03-16T00:00:00,2026-02-14T00:00:00
+11,André Luiz Costa,andré.luiz.costa@ldc-cpq.com,$2b$12$abRtvHashPlaceholder000000000000000000000000000,rtv,Primavera do Leste-MT,1,2025-03-16T00:00:00,2026-02-14T00:00:00
+12,Larissa Pereira,larissa.pereira@ldc-cpq.com,$2b$12$abRtvHashPlaceholder000000000000000000000000000,rtv,Luís Eduardo Magalhães-BA,1,2025-03-16T00:00:00,2026-02-14T00:00:00

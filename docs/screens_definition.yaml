@@ -1,0 +1,768 @@
+pages:
+
+  dashboard:
+    title: "Dashboard Comercial"
+    route: /dashboard
+    module: "Dashboard Comercial"
+    description: >
+      Visão consolidada da operação comercial de insumos — volume de pedidos captados,
+      receita, mix defensivos x fertilizantes, status da fila de validação e desempenho
+      por RTV/região.
+    layout: sidebar
+    screen_type: dashboard
+    icon: speedometer2
+    data_sources:
+      - entity: pedidos
+        mock_file: mock_data/pedidos.csv
+      - entity: pedido_itens
+        mock_file: mock_data/pedido_itens.csv
+      - entity: clientes
+        mock_file: mock_data/clientes.csv
+      - entity: usuarios
+        mock_file: mock_data/usuarios.csv
+    access:
+      - {role: admin, permissions: full}
+      - {role: trader, permissions: [visualizar, exportar-excel, drill-down]}
+      - {role: rtv, permissions: [visualizar]}
+    has_simulation: false
+    has_approval_flow: false
+    business_rules_ref: [RN-001, RN-002]
+    workflow:
+      belongs_to: [captacao_aprovacao_flow, reporting_flow]
+      step_id: monitorar_dashboard
+      receives_context: [pedido_id, status_aprovacao, periodo, rtv, regiao]
+      provides_context: [periodo, rtv, regiao]
+    components:
+      - id: dashboard-filtros
+        type: filter
+        label: "Filtros"
+        description: "Filtra KPIs e gráficos por período, RTV, região, linha e status"
+        position: top
+        config:
+          entity: pedidos
+      - id: dashboard-kpis
+        type: kpi
+        label: "Indicadores"
+        description: "Pedidos captados, receita acumulada, ticket médio, pendentes, tempo médio de triagem, % com alerta"
+        position: top
+        config:
+          entity: pedidos
+          note: "Receita e ticket médio só somam pedidos com status Aprovado (RN-002)"
+      - id: dashboard-chart-receita
+        type: chart
+        label: "Evolução de receita e volume por semana"
+        description: "Quebra por linha de produto (Defensivos x Fertilizantes)"
+        position: center
+        config:
+          chart_type: line
+          entity: pedidos
+          x_field: data_pedido
+          y_field: valor_total
+          group_by: linha_produto
+          title: "Receita e volume por semana"
+      - id: dashboard-chart-top-rtv
+        type: chart
+        label: "Top RTVs por receita"
+        description: "Ranking de RTVs por receita captada no período"
+        position: center
+        config:
+          chart_type: bar
+          entity: pedidos
+          x_field: rtv
+          y_field: valor_total
+          title: "Top RTVs por receita captada"
+    filters:
+      - id: filtro-data-pedido
+        label: "Período"
+        type: date_range
+        entity_field: pedidos.created_at
+        placeholder: null
+        default: null
+        required: false
+      - id: filtro-rtv
+        label: "RTV"
+        type: dropdown
+        entity_field: usuarios.nome
+        placeholder: "Todos"
+        default: null
+        required: false
+      - id: filtro-regiao
+        label: "Região"
+        type: dropdown
+        entity_field: clientes.regiao
+        placeholder: "Todas"
+        default: null
+        required: false
+      - id: filtro-linha-produto
+        label: "Linha de Produto"
+        type: dropdown
+        entity_field: produtos.tipo
+        placeholder: "Todas"
+        default: null
+        required: false
+      - id: filtro-status
+        label: "Status"
+        type: dropdown
+        entity_field: pedidos.status
+        placeholder: "Todos"
+        default: null
+        required: false
+    actions:
+      - id: dashboard-btn-exportar
+        label: "Exportar Excel"
+        type: download
+        target: dashboard_export
+        confirmation: false
+        roles: [admin, trader]
+      - id: dashboard-btn-drilldown
+        label: "Ver Pedidos"
+        type: navigate
+        target: /fila-validacao
+        confirmation: false
+        roles: [admin, trader]
+
+  captacao-pedido:
+    title: "Captação de Pedido (CPQ)"
+    route: /captacao-pedido
+    module: "Captação de Pedido (CPQ)"
+    description: >
+      Tela onde o RTV registra o pedido do cliente — seleciona cliente, adiciona
+      produtos, preenche condições comerciais obrigatórias. O preço unitário é
+      calculado automaticamente por lookup (produto + janela de entrega + condição
+      comercial) — RN-004 — nunca digitado manualmente. NÃO é uma tela de simulação:
+      não há regra logic_type: interactive_formula vinculada a este módulo em
+      docs/business_logic.yaml, portanto nenhum slider/painel de parâmetros é exibido.
+    layout: sidebar
+    screen_type: mixed
+    icon: cart-plus
+    data_sources:
+      - entity: pedidos
+        mock_file: mock_data/pedidos.csv
+      - entity: pedido_itens
+        mock_file: mock_data/pedido_itens.csv
+      - entity: clientes
+        mock_file: mock_data/clientes.csv
+      - entity: produtos
+        mock_file: mock_data/produtos.csv
+        note: "preco_base substitui a antiga tabela precos_por_janela — RN-004 agora calcula por fórmula (preco_base × % condição × % janela), não por lookup de combinação pré-cadastrada"
+    access:
+      - {role: admin, permissions: full}
+      - {role: trader, permissions: [visualizar, editar, precificar]}
+      - {role: rtv, permissions: [criar, editar, importar-mensagem, submit_approval]}
+    has_simulation: false
+    has_approval_flow: false
+    business_rules_ref: [RN-003, RN-004, RN-005, RN-006]
+    workflow:
+      belongs_to: [captacao_aprovacao_flow, recomendacao_para_pedido_flow]
+      step_id: capturar_pedido
+      receives_context: [cliente_id, produto_id, pedido_id, comentario_aprovacao]
+      provides_context: [pedido_id, status]
+    components:
+      - id: captacao-pedido-grid-rascunhos
+        type: grid
+        label: "Meus Pedidos (Rascunho/Pendente)"
+        description: "Lista de pedidos do RTV logado ainda não aprovados, para continuar edição"
+        position: top
+        config:
+          entity: pedidos
+          columns:
+            - {field: id, header: "ID", type: number, sortable: true, filterable: true, width: 70}
+            - {field: cliente_id, header: "Cliente", type: text, sortable: true, filterable: true}
+            - {field: cultura_safra, header: "Cultura/Safra", type: text, sortable: true, filterable: true}
+            - {field: canal_origem, header: "Canal", type: badge, sortable: true, filterable: true}
+            - {field: valor_total, header: "Valor Total", type: currency, sortable: true, filterable: false}
+            - {field: status, header: "Status", type: badge, sortable: true, filterable: true}
+          pagination: true
+          export_excel: false
+          row_actions: [edit]
+      - id: captacao-pedido-form-cabecalho
+        type: form
+        label: "Cabeçalho do Pedido"
+        description: "Cliente, cultura/safra, canal de origem e observações"
+        position: center
+        config:
+          entity: pedidos
+          fields:
+            - {name: cliente_id, type: select, label: "Cliente", required: true}
+            - {name: cultura_safra, type: text, label: "Cultura/Safra", required: false}
+            - {name: canal_origem, type: select, label: "Canal de Origem", required: true}
+            - {name: observacoes, type: textarea, label: "Observações", required: false}
+          submit_action: captacao-pedido-btn-salvar-cabecalho
+      - id: captacao-pedido-grid-itens
+        type: grid
+        label: "Itens do Pedido"
+        description: >
+          Itens do pedido com parcelamento de entrega por janela. preco_unitario e
+          subtotal são colunas computed — recalculadas por pandas em _queries.py via
+          fórmula (produtos.preco_base × % condição de pagamento × % janela/safra),
+          nunca lidas de uma coluna pronta em pedido_itens.csv.
+        position: center
+        config:
+          entity: pedido_itens
+          columns:
+            - {field: produto_id, header: "Produto", type: text, sortable: true, filterable: true}
+            - {field: quantidade, header: "Quantidade", type: number, sortable: true, filterable: false}
+            - {field: unidade, header: "Unidade", type: text, sortable: false, filterable: false, width: 90}
+            - {field: janela_mes, header: "Mês Janela", type: number, sortable: true, filterable: true, width: 110}
+            - {field: janela_ano, header: "Ano Janela", type: number, sortable: true, filterable: true, width: 110}
+            - {field: formato_entrega, header: "Formato Entrega", type: text, sortable: true, filterable: true}
+            - {field: condicao_pagamento, header: "Condição Pagamento", type: text, sortable: true, filterable: true}
+            - {field: local_entrega, header: "Local Entrega", type: text, sortable: false, filterable: true}
+            - field: preco_unitario
+              header: "Preço Unitário"
+              type: computed
+              compute_from: RN-004
+              sortable: true
+              filterable: false
+            - field: subtotal
+              header: "Subtotal"
+              type: computed
+              compute_from: RN-004
+              sortable: true
+              filterable: false
+          pagination: false
+          export_excel: false
+          row_actions: [edit, delete]
+      - id: captacao-pedido-modal-captura-assistida
+        type: modal
+        label: "Captura Assistida por Mensagem"
+        description: "Importa texto/imagem/e-mail e gera rascunho para revisão humana (RN-005)"
+        position: center
+        config:
+          entity: pedidos
+          fields:
+            - {name: canal_origem, type: select, label: "Canal", required: true}
+            - {name: texto_mensagem, type: textarea, label: "Conteúdo da Mensagem", required: true}
+          submit_action: captacao-pedido-btn-confirmar-captura
+    filters: []
+    actions:
+      - id: captacao-pedido-btn-novo
+        label: "Novo Pedido"
+        type: modal
+        target: captacao-pedido-form-cabecalho
+        confirmation: false
+        roles: [rtv, admin]
+      - id: captacao-pedido-btn-importar-mensagem
+        label: "Captura Assistida"
+        type: modal
+        target: captacao-pedido-modal-captura-assistida
+        confirmation: false
+        roles: [rtv, admin]
+      - id: captacao-pedido-btn-adicionar-item
+        label: "Adicionar Item"
+        type: modal
+        target: captacao-pedido-grid-itens
+        confirmation: false
+        roles: [rtv, admin]
+      - id: captacao-pedido-btn-enviar-aprovacao
+        label: "Enviar para Validação"
+        type: submit_approval
+        target: fila-validacao
+        confirmation: true
+        roles: [rtv, admin]
+
+  fila-validacao:
+    title: "Fila de Validação do Trader"
+    route: /fila-validacao
+    module: "Fila de Validação do Trader"
+    description: >
+      Fila onde o trader avalia os pedidos enviados pelos RTVs, com alertas de
+      consistência já sinalizados, permitindo aprovar, rejeitar ou devolver com
+      questionamento.
+    layout: sidebar
+    screen_type: approval_queue
+    icon: check2-circle
+    data_sources:
+      - entity: pedidos
+        mock_file: mock_data/pedidos.csv
+      - entity: clientes
+        mock_file: mock_data/clientes.csv
+      - entity: usuarios
+        mock_file: mock_data/usuarios.csv
+      - entity: alertas_consistencia
+        mock_file: mock_data/alertas_consistencia.csv
+    access:
+      - {role: admin, permissions: full}
+      - {role: trader, permissions: [approve, reject, return_to_author, visualizar, exportar-excel]}
+      - {role: rtv, permissions: [visualizar]}
+    has_simulation: false
+    has_approval_flow: true
+    business_rules_ref: [RN-007, RN-008, RN-009, RN-010, RN-011]
+    workflow:
+      belongs_to: [captacao_aprovacao_flow]
+      step_id: validar_pedido
+      receives_context: [pedido_id]
+      provides_context: [status_aprovacao, comentario_aprovacao, aprovado_por]
+    components:
+      - id: fila-validacao-kpis
+        type: kpi
+        label: "Indicadores da Fila"
+        description: "Pendentes, aprovados hoje, rejeitados/devolvidos hoje, tempo médio de validação"
+        position: top
+        config:
+          entity: pedidos
+      - id: fila-validacao-filtros
+        type: filter
+        label: "Filtros"
+        description: "Filtra a fila por status, RTV, presença de alerta e data de envio"
+        position: top
+        config:
+          entity: pedidos
+      - id: fila-validacao-barra-aprovacao
+        type: approval_bar
+        label: "Ações de Validação"
+        description: "Aprovar, rejeitar ou devolver pedido(s) selecionado(s) — restrito a trader/admin (RN-007) e nunca ao autor (RN-009)"
+        position: top
+        config:
+          actions_analista: [submit_approval]
+          actions_supervisor: [approve, reject]
+          require_comment_on_reject: true
+          require_comment_on_approve: false
+          status_field: status
+          status_values:
+            pending: "Pendente Aprovação"
+            approved: "Aprovado"
+            rejected: "Rejeitado"
+            draft: "Rascunho"
+          extra_action: return_to_author
+          extra_action_status: "Devolvido"
+          extra_action_requires_comment: true
+      - id: fila-validacao-grid
+        type: grid
+        label: "Pedidos Pendentes"
+        description: "Pedidos enviados para validação, com alerta de inconsistência sinalizado (RN-011)"
+        position: center
+        config:
+          entity: pedidos
+          columns:
+            - {field: id, header: "ID", type: number, sortable: true, filterable: true, width: 70}
+            - {field: cliente_id, header: "Cliente", type: text, sortable: true, filterable: true}
+            - {field: rtv_id, header: "RTV", type: text, sortable: true, filterable: true}
+            - {field: canal_origem, header: "Canal", type: badge, sortable: true, filterable: true}
+            - {field: valor_total, header: "Valor Total", type: currency, sortable: true, filterable: false}
+            - {field: status, header: "Status", type: badge, sortable: true, filterable: true}
+            - {field: com_alerta, header: "Alerta", type: badge, sortable: true, filterable: true}
+            - {field: aprovado_por, header: "Avaliado por", type: text, sortable: true, filterable: false}
+            - {field: aprovado_em, header: "Avaliado em", type: date, sortable: true, filterable: false}
+            - {field: comentario_aprovacao, header: "Comentário", type: text, sortable: false, filterable: false}
+          pagination: true
+          export_excel: true
+          row_actions: [view]
+    filters:
+      - id: filtro-status
+        label: "Status"
+        type: dropdown
+        entity_field: pedidos.status
+        placeholder: "Todos"
+        default: null
+        required: false
+      - id: filtro-rtv
+        label: "RTV"
+        type: dropdown
+        entity_field: usuarios.nome
+        placeholder: "Todos"
+        default: null
+        required: false
+      - id: filtro-com-alerta
+        label: "Com Alerta"
+        type: dropdown
+        entity_field: alertas_consistencia.pedido_id
+        placeholder: "Todos"
+        default: null
+        required: false
+      - id: filtro-data-envio
+        label: "Data de Envio"
+        type: date_range
+        entity_field: pedidos.created_at
+        placeholder: null
+        default: null
+        required: false
+    actions:
+      - id: fila-validacao-btn-aprovar
+        label: "Aprovar"
+        type: approve
+        target: pedidos
+        confirmation: true
+        roles: [trader, admin]
+      - id: fila-validacao-btn-rejeitar
+        label: "Rejeitar"
+        type: reject
+        target: pedidos
+        confirmation: true
+        roles: [trader, admin]
+      - id: fila-validacao-btn-devolver
+        label: "Devolver com Questionamento"
+        type: reject
+        target: pedidos
+        confirmation: true
+        roles: [trader, admin]
+      - id: fila-validacao-btn-exportar
+        label: "Exportar Excel"
+        type: download
+        target: fila-validacao_export
+        confirmation: false
+        roles: [trader, admin]
+
+  recomendacoes:
+    title: "Motor de Recomendação (Cross-sell)"
+    route: /recomendacoes
+    module: "Motor de Recomendação (Cross-sell)"
+    description: >
+      Módulo proativo que sugere produtos ao RTV com base no comportamento de compra
+      do cliente, sazonalidade da cultura/safra e mix típico da região. Recomendações
+      nunca criam pedido automaticamente (RN-012).
+    layout: sidebar
+    screen_type: mixed
+    icon: stars
+    data_sources:
+      - entity: recomendacoes
+        mock_file: mock_data/recomendacoes.csv
+      - entity: clientes
+        mock_file: mock_data/clientes.csv
+      - entity: produtos
+        mock_file: mock_data/produtos.csv
+    access:
+      - {role: admin, permissions: full}
+      - {role: trader, permissions: [visualizar, exportar-excel]}
+      - {role: rtv, permissions: [visualizar, adicionar-ao-pedido]}
+    has_simulation: false
+    has_approval_flow: false
+    business_rules_ref: [RN-012, RN-013, RN-014]
+    workflow:
+      belongs_to: [recomendacao_para_pedido_flow]
+      step_id: revisar_recomendacoes
+      receives_context: []
+      provides_context: [cliente_id, produto_id]
+    components:
+      - id: recomendacoes-filtros
+        type: filter
+        label: "Filtros"
+        description: "Filtra recomendações por cliente, cultura/safra, região e linha de produto"
+        position: top
+        config:
+          entity: recomendacoes
+      - id: recomendacoes-kpis
+        type: kpi
+        label: "Indicadores"
+        description: "% aceitos, receita incremental estimada, cobertura da carteira"
+        position: top
+        config:
+          entity: recomendacoes
+      - id: recomendacoes-chart-top-produtos
+        type: chart
+        label: "Produtos mais recomendados"
+        description: "Ranking de produtos recomendados no período e taxa de aceitação"
+        position: center
+        config:
+          chart_type: bar
+          entity: recomendacoes
+          x_field: produto_id
+          y_field: score
+          group_by: motivo
+          title: "Produtos mais recomendados"
+      - id: recomendacoes-grid
+        type: grid
+        label: "Recomendações por Cliente"
+        description: >
+          Lista de recomendações com score. ATENÇÃO: RN-013 (score) está marcada
+          parsed:false / needs_review em docs/business_logic.yaml — o roadmap não
+          especifica os pesos de recência/frequência/volume/sazonalidade. A coluna
+          score é lida diretamente de mock_data/recomendacoes.csv (já populada pelo
+          data-engineer) — NÃO foi implementada nenhuma fórmula de pesos inventada
+          no frontend; ver aviso no relatório final.
+        position: center
+        config:
+          entity: recomendacoes
+          columns:
+            - {field: cliente_id, header: "Cliente", type: text, sortable: true, filterable: true}
+            - {field: produto_id, header: "Produto", type: text, sortable: true, filterable: true}
+            - {field: motivo, header: "Motivo", type: badge, sortable: true, filterable: true}
+            - {field: score, header: "Score", type: number, sortable: true, filterable: false}
+            - {field: aceita, header: "Aceita", type: badge, sortable: true, filterable: true}
+            - {field: gerada_em, header: "Gerada em", type: date, sortable: true, filterable: false}
+          pagination: true
+          export_excel: true
+          row_actions: [view]
+    filters:
+      - id: filtro-cliente
+        label: "Cliente"
+        type: dropdown
+        entity_field: clientes.nome
+        placeholder: "Todos"
+        default: null
+        required: false
+      - id: filtro-cultura-safra
+        label: "Cultura/Safra"
+        type: dropdown
+        entity_field: clientes.cultura_principal
+        placeholder: "Todas"
+        default: null
+        required: false
+      - id: filtro-regiao
+        label: "Região"
+        type: dropdown
+        entity_field: clientes.regiao
+        placeholder: "Todas"
+        default: null
+        required: false
+      - id: filtro-linha-produto
+        label: "Linha de Produto"
+        type: dropdown
+        entity_field: produtos.tipo
+        placeholder: "Todas"
+        default: null
+        required: false
+    actions:
+      - id: recomendacoes-btn-adicionar-pedido
+        label: "Adicionar ao Pedido"
+        type: navigate
+        target: /captacao-pedido
+        confirmation: false
+        roles: [rtv, admin]
+      - id: recomendacoes-btn-exportar
+        label: "Exportar Excel"
+        type: download
+        target: recomendacoes_export
+        confirmation: false
+        roles: [trader, admin]
+
+  relatorios:
+    title: "Relatórios Comerciais"
+    route: /relatorios
+    module: "Relatórios Comerciais"
+    description: "Relatórios exportáveis de pedidos, receita, mix de produtos, desempenho de RTVs e taxa de aprovação/rejeição."
+    layout: sidebar
+    screen_type: report
+    icon: file-earmark-bar-graph
+    data_sources:
+      - entity: pedidos
+        mock_file: mock_data/pedidos.csv
+      - entity: pedido_itens
+        mock_file: mock_data/pedido_itens.csv
+      - entity: clientes
+        mock_file: mock_data/clientes.csv
+      - entity: usuarios
+        mock_file: mock_data/usuarios.csv
+      - entity: alertas_consistencia
+        mock_file: mock_data/alertas_consistencia.csv
+    access:
+      - {role: admin, permissions: full}
+      - {role: trader, permissions: [gerar, exportar]}
+      - {role: rtv, permissions: [gerar, exportar]}
+    has_simulation: false
+    has_approval_flow: false
+    business_rules_ref: [RN-015]
+    workflow:
+      belongs_to: [reporting_flow]
+      step_id: relatorio_step
+      receives_context: [periodo, rtv, regiao]
+      provides_context: []
+    components:
+      - id: relatorios-filtros
+        type: filter
+        label: "Filtros"
+        description: "Filtra relatório por período, RTV, região, cliente e linha de produto"
+        position: top
+        config:
+          entity: pedidos
+      - id: relatorios-chart-receita-periodo
+        type: chart
+        label: "Receita e volume por período"
+        description: "Série temporal de receita e volume, por linha e por RTV"
+        position: center
+        config:
+          chart_type: line
+          entity: pedidos
+          x_field: created_at
+          y_field: valor_total
+          group_by: rtv_id
+          title: "Receita por período"
+      - id: relatorios-chart-eficiencia
+        type: chart
+        label: "Eficiência de triagem"
+        description: "Tempo de ciclo, taxa de aprovação/rejeição/devolução e incidência de alertas"
+        position: center
+        config:
+          chart_type: bar
+          entity: pedidos
+          x_field: status
+          y_field: id
+          group_by: rtv_id
+          title: "Eficiência de triagem por status"
+      - id: relatorios-grid
+        type: grid
+        label: "Pedidos e Receita"
+        description: "Grid detalhada de pedidos do período filtrado, exportável"
+        position: bottom
+        config:
+          entity: pedidos
+          columns:
+            - {field: id, header: "ID", type: number, sortable: true, filterable: true, width: 70}
+            - {field: cliente_id, header: "Cliente", type: text, sortable: true, filterable: true}
+            - {field: rtv_id, header: "RTV", type: text, sortable: true, filterable: true}
+            - {field: valor_total, header: "Valor Total", type: currency, sortable: true, filterable: false}
+            - {field: status, header: "Status", type: badge, sortable: true, filterable: true}
+            - {field: created_at, header: "Criado em", type: date, sortable: true, filterable: false}
+          pagination: true
+          export_excel: true
+          row_actions: []
+    filters:
+      - id: filtro-periodo
+        label: "Período"
+        type: date_range
+        entity_field: pedidos.created_at
+        placeholder: null
+        default: null
+        required: false
+      - id: filtro-rtv
+        label: "RTV"
+        type: dropdown
+        entity_field: usuarios.nome
+        placeholder: "Todos"
+        default: null
+        required: false
+      - id: filtro-regiao
+        label: "Região"
+        type: dropdown
+        entity_field: clientes.regiao
+        placeholder: "Todas"
+        default: null
+        required: false
+      - id: filtro-cliente
+        label: "Cliente"
+        type: dropdown
+        entity_field: clientes.nome
+        placeholder: "Todos"
+        default: null
+        required: false
+      - id: filtro-linha-produto
+        label: "Linha de Produto"
+        type: dropdown
+        entity_field: produtos.tipo
+        placeholder: "Todas"
+        default: null
+        required: false
+    actions:
+      - id: relatorios-btn-exportar-excel
+        label: "Exportar Excel"
+        type: download
+        target: relatorios_export_excel
+        confirmation: false
+        roles: [admin, trader, rtv]
+      - id: relatorios-btn-exportar-pdf
+        label: "Exportar PDF"
+        type: download
+        target: relatorios_export_pdf
+        confirmation: false
+        roles: [admin, trader, rtv]
+        note: >
+          Fora do stack 100% Python/Dash não há geração nativa de PDF sem biblioteca
+          adicional (ex.: reportlab), proibida por esta skill. Implementado como
+          fallback: exporta Excel e exibe aviso "Exportação em PDF não disponível
+          nesta versão — utilize Excel". Ver aviso no relatório final.
+    known_review_issues:
+      - {rule: RN-015, status: needs_review, note: "Filtro de escopo por carteira/região marcado parsed:false — condição de RBAC já descrita no business_logic.yaml, implementada, mas recomenda-se revisão de negócio."}
+
+  administracao:
+    title: "Administração"
+    route: /administracao
+    module: "Administração"
+    description: "Controle de usuários do sistema e do catálogo de produtos/preços."
+    layout: sidebar
+    screen_type: grid
+    icon: people
+    data_sources:
+      - entity: usuarios
+        mock_file: mock_data/usuarios.csv
+      - entity: produtos
+        mock_file: mock_data/produtos.csv
+        note: "preco_base substitui a antiga tabela precos_por_janela — RN-004 agora calcula por fórmula (preco_base × % condição × % janela), não por lookup de combinação pré-cadastrada"
+    access:
+      - {role: admin, permissions: full}
+    has_simulation: false
+    has_approval_flow: false
+    business_rules_ref: [RN-016, RN-017]
+    components:
+      - id: administracao-tabs
+        type: tabs
+        label: "Administração"
+        description: "Abas Usuários e Catálogo"
+        position: top
+        config:
+          tabs: [usuarios, catalogo]
+      - id: administracao-filtros-usuarios
+        type: filter
+        label: "Filtros de Usuários"
+        description: "Filtra usuários por role e status ativo"
+        position: top
+        config:
+          entity: usuarios
+      - id: administracao-grid-usuarios
+        type: grid
+        label: "Usuários"
+        description: "Gestão de usuários — criar, editar e desativar (RN-016), email único (RN-017)"
+        position: center
+        config:
+          entity: usuarios
+          columns:
+            - {field: id, header: "ID", type: number, sortable: true, filterable: true, width: 70}
+            - {field: nome, header: "Nome", type: text, sortable: true, filterable: true}
+            - {field: email, header: "Email", type: text, sortable: true, filterable: true}
+            - {field: role, header: "Perfil", type: badge, sortable: true, filterable: true}
+            - {field: rtv_territorio, header: "Território", type: text, sortable: true, filterable: true}
+            - {field: ativo, header: "Ativo", type: badge, sortable: true, filterable: true}
+          pagination: true
+          export_excel: false
+          row_actions: [edit, delete]
+      - id: administracao-grid-catalogo
+        type: grid
+        label: "Catálogo de Produtos"
+        description: "Manutenção de produtos e preços por janela"
+        position: center
+        config:
+          entity: produtos
+          columns:
+            - {field: id, header: "ID", type: number, sortable: true, filterable: true, width: 70}
+            - {field: nome_comercial, header: "Produto", type: text, sortable: true, filterable: true}
+            - {field: tipo, header: "Tipo", type: badge, sortable: true, filterable: true}
+            - {field: classe, header: "Classe", type: text, sortable: true, filterable: true}
+            - {field: unidade, header: "Unidade", type: text, sortable: false, filterable: false, width: 90}
+            - {field: custo, header: "Custo", type: currency, sortable: true, filterable: false}
+            - {field: ativo, header: "Ativo", type: badge, sortable: true, filterable: true}
+          pagination: true
+          export_excel: false
+          row_actions: [edit, delete]
+    filters:
+      - id: filtro-role
+        label: "Perfil"
+        type: dropdown
+        entity_field: usuarios.role
+        placeholder: "Todos"
+        default: null
+        required: false
+      - id: filtro-ativo
+        label: "Ativo"
+        type: dropdown
+        entity_field: usuarios.ativo
+        placeholder: "Todos"
+        default: null
+        required: false
+    actions:
+      - id: administracao-btn-novo-usuario
+        label: "Novo Usuário"
+        type: modal
+        target: administracao-grid-usuarios
+        confirmation: false
+        roles: [admin]
+      - id: administracao-btn-desativar-usuario
+        label: "Desativar"
+        type: api_call
+        target: usuarios
+        confirmation: true
+        roles: [admin]
+      - id: administracao-btn-importar-csv
+        label: "Importar CSV"
+        type: modal
+        target: administracao-grid-catalogo
+        confirmation: false
+        roles: [admin]

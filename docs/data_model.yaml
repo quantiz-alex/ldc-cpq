@@ -1,0 +1,175 @@
+entities:
+  usuarios:
+    table: usuarios
+    description: "Usuários do sistema com autenticação JWT"
+    fields:
+      - {name: id, type: int, nullable: false, primary_key: true}
+      - {name: nome, type: "varchar(100)", nullable: false, primary_key: false}
+      - {name: email, type: "varchar(150)", nullable: false, primary_key: false}
+      - {name: senha_hash, type: "varchar(255)", nullable: false, primary_key: false}
+      - {name: role, type: "varchar(20)", nullable: false, primary_key: false, description: "enum role_usuario"}
+      - {name: rtv_territorio, type: "varchar(100)", nullable: true, primary_key: false}
+      - {name: ativo, type: bit, nullable: false, default: true, primary_key: false}
+      - {name: created_at, type: datetime2, nullable: false, primary_key: false}
+      - {name: updated_at, type: datetime2, nullable: false, primary_key: false}
+    indexes:
+      - {fields: [email], unique: true}
+      - {fields: [role], unique: false}
+
+  produtos:
+    table: produtos
+    description: "SKU de defensivo ou fertilizante do catálogo da LDC"
+    fields:
+      - {name: id, type: int, nullable: false, primary_key: true}
+      - {name: nome_comercial, type: "varchar(150)", nullable: false, primary_key: false}
+      - {name: tipo, type: "varchar(20)", nullable: false, primary_key: false, description: "enum tipo_produto"}
+      - {name: classe, type: "varchar(80)", nullable: true, primary_key: false}
+      - {name: ingrediente_ativo, type: "varchar(150)", nullable: true, primary_key: false}
+      - {name: unidade, type: "varchar(20)", nullable: false, primary_key: false}
+      - {name: custo, type: "decimal(15,2)", nullable: false, primary_key: false}
+      - {name: ativo, type: bit, nullable: false, default: true, primary_key: false}
+      - {name: created_at, type: datetime2, nullable: false, primary_key: false}
+      - {name: updated_at, type: datetime2, nullable: false, primary_key: false}
+    indexes:
+      - {fields: [tipo], unique: false}
+      - {fields: [ativo], unique: false}
+
+  clientes:
+    table: clientes
+    description: "Produtor rural ou revenda atendido pela LDC Insumos"
+    fields:
+      - {name: id, type: int, nullable: false, primary_key: true}
+      - {name: nome, type: "varchar(150)", nullable: false, primary_key: false}
+      - {name: documento, type: "varchar(20)", nullable: false, primary_key: false}
+      - {name: regiao, type: "varchar(100)", nullable: false, primary_key: false}
+      - {name: cultura_principal, type: "varchar(100)", nullable: true, primary_key: false}
+      - {name: rtv_id, type: int, nullable: false, primary_key: false, foreign_key: {table: usuarios, field: id}, description: "RTV responsável pela carteira do cliente"}
+      - {name: ativo, type: bit, nullable: false, default: true, primary_key: false}
+      - {name: created_at, type: datetime2, nullable: false, primary_key: false}
+      - {name: updated_at, type: datetime2, nullable: false, primary_key: false}
+    indexes:
+      - {fields: [documento], unique: true}
+      - {fields: [rtv_id], unique: false}
+      - {fields: [regiao], unique: false}
+
+  precos_por_janela:
+    table: precos_por_janela
+    description: "Preço vigente de um produto para uma janela de entrega específica (o preço muda conforme o mês de entrega)"
+    fields:
+      - {name: id, type: int, nullable: false, primary_key: true}
+      - {name: produto_id, type: int, nullable: false, primary_key: false, foreign_key: {table: produtos, field: id}}
+      - {name: janela_mes, type: int, nullable: false, primary_key: false}
+      - {name: janela_ano, type: int, nullable: false, primary_key: false}
+      - {name: condicao_pagamento, type: "varchar(50)", nullable: false, primary_key: false}
+      - {name: preco, type: "decimal(15,2)", nullable: false, primary_key: false}
+      - {name: vigente_de, type: date, nullable: false, primary_key: false}
+      - {name: vigente_ate, type: date, nullable: true, primary_key: false}
+      - {name: created_at, type: datetime2, nullable: false, primary_key: false}
+      - {name: updated_at, type: datetime2, nullable: false, primary_key: false}
+    indexes:
+      - {fields: [produto_id, janela_mes, janela_ano, condicao_pagamento], unique: true}
+
+  pedidos:
+    table: pedidos
+    description: "Pedido comercial captado pelo RTV, submetido à validação do trader"
+    fields:
+      - {name: id, type: int, nullable: false, primary_key: true}
+      - {name: cliente_id, type: int, nullable: false, primary_key: false, foreign_key: {table: clientes, field: id}}
+      - {name: rtv_id, type: int, nullable: false, primary_key: false, foreign_key: {table: usuarios, field: id}}
+      - {name: cultura_safra, type: "varchar(100)", nullable: true, primary_key: false}
+      - {name: canal_origem, type: "varchar(20)", nullable: false, primary_key: false, description: "enum canal_origem"}
+      - {name: valor_total, type: "decimal(15,2)", nullable: false, default: 0, primary_key: false}
+      - {name: observacoes, type: text, nullable: true, primary_key: false}
+      - {name: status, type: "varchar(30)", nullable: false, default: "Rascunho", primary_key: false, description: "enum status_pedido"}
+      - {name: aprovado_por, type: "varchar(100)", nullable: true, primary_key: false}
+      - {name: aprovado_em, type: datetime2, nullable: true, primary_key: false}
+      - {name: comentario_aprovacao, type: text, nullable: true, primary_key: false}
+      - {name: created_at, type: datetime2, nullable: false, primary_key: false}
+      - {name: updated_at, type: datetime2, nullable: false, primary_key: false}
+    indexes:
+      - {fields: [cliente_id], unique: false}
+      - {fields: [rtv_id], unique: false}
+      - {fields: [status], unique: false}
+
+  pedido_itens:
+    table: pedido_itens
+    description: "Item do pedido, incluindo o parcelamento da entrega por janela (uma linha por janela de entrega do mesmo produto)"
+    fields:
+      - {name: id, type: int, nullable: false, primary_key: true}
+      - {name: pedido_id, type: int, nullable: false, primary_key: false, foreign_key: {table: pedidos, field: id}}
+      - {name: produto_id, type: int, nullable: false, primary_key: false, foreign_key: {table: produtos, field: id}}
+      - {name: quantidade, type: "decimal(15,2)", nullable: false, primary_key: false}
+      - {name: unidade, type: "varchar(20)", nullable: false, primary_key: false}
+      - {name: janela_mes, type: int, nullable: false, primary_key: false}
+      - {name: janela_ano, type: int, nullable: false, primary_key: false}
+      - {name: formato_entrega, type: "varchar(50)", nullable: false, primary_key: false}
+      - {name: local_entrega, type: "varchar(150)", nullable: false, primary_key: false}
+      - {name: condicao_pagamento, type: "varchar(50)", nullable: false, primary_key: false, description: "Prazo de pagamento/condição comercial do item — chave de lookup em precos_por_janela junto com produto_id+janela_mes+janela_ano (RN-004)"}
+      - {name: preco_unitario, type: "decimal(15,2)", nullable: false, primary_key: false}
+      - {name: subtotal, type: "decimal(15,2)", nullable: false, primary_key: false}
+      - {name: created_at, type: datetime2, nullable: false, primary_key: false}
+      - {name: updated_at, type: datetime2, nullable: false, primary_key: false}
+    indexes:
+      - {fields: [pedido_id], unique: false}
+      - {fields: [produto_id], unique: false}
+      - {fields: [produto_id, janela_mes, janela_ano, condicao_pagamento], unique: false}
+
+  alertas_consistencia:
+    table: alertas_consistencia
+    description: "Registro dos alertas gerados automaticamente na análise do pedido"
+    fields:
+      - {name: id, type: int, nullable: false, primary_key: true}
+      - {name: pedido_id, type: int, nullable: false, primary_key: false, foreign_key: {table: pedidos, field: id}}
+      - {name: tipo, type: "varchar(30)", nullable: false, primary_key: false, description: "enum tipo_alerta"}
+      - {name: descricao, type: text, nullable: false, primary_key: false}
+      - {name: severidade, type: "varchar(10)", nullable: false, primary_key: false, description: "enum severidade_alerta"}
+      - {name: resolvido_por, type: "varchar(100)", nullable: true, primary_key: false}
+      - {name: created_at, type: datetime2, nullable: false, primary_key: false}
+      - {name: updated_at, type: datetime2, nullable: false, primary_key: false}
+    indexes:
+      - {fields: [pedido_id], unique: false}
+      - {fields: [severidade], unique: false}
+
+  recomendacoes:
+    table: recomendacoes
+    description: "Sugestão de produto gerada para um cliente com base em histórico e sazonalidade"
+    fields:
+      - {name: id, type: int, nullable: false, primary_key: true}
+      - {name: cliente_id, type: int, nullable: false, primary_key: false, foreign_key: {table: clientes, field: id}}
+      - {name: produto_id, type: int, nullable: false, primary_key: false, foreign_key: {table: produtos, field: id}}
+      - {name: motivo, type: "varchar(20)", nullable: false, primary_key: false, description: "enum motivo_recomendacao"}
+      - {name: score, type: "decimal(8,4)", nullable: false, primary_key: false}
+      - {name: aceita, type: bit, nullable: false, default: false, primary_key: false}
+      - {name: gerada_em, type: datetime2, nullable: false, primary_key: false}
+      - {name: created_at, type: datetime2, nullable: false, primary_key: false}
+      - {name: updated_at, type: datetime2, nullable: false, primary_key: false}
+    indexes:
+      - {fields: [cliente_id], unique: false}
+      - {fields: [produto_id], unique: false}
+
+relationships:
+  - {from: usuarios, to: clientes, type: one_to_many, description: "Um RTV (usuarios.role=rtv) atende muitos clientes"}
+  - {from: clientes, to: pedidos, type: one_to_many, description: "Um cliente tem muitos pedidos"}
+  - {from: usuarios, to: pedidos, type: one_to_many, description: "Um RTV capta muitos pedidos"}
+  - {from: pedidos, to: pedido_itens, type: one_to_many, description: "Um pedido tem muitos itens"}
+  - {from: produtos, to: pedido_itens, type: one_to_many, description: "Um produto aparece em muitos itens de pedido"}
+  - {from: produtos, to: precos_por_janela, type: one_to_many, description: "Um produto tem muitos preços vigentes por janela"}
+  - {from: pedidos, to: alertas_consistencia, type: one_to_many, description: "Um pedido tem muitos alertas de consistência"}
+  - {from: clientes, to: recomendacoes, type: one_to_many, description: "Um cliente recebe muitas recomendações"}
+  - {from: produtos, to: recomendacoes, type: one_to_many, description: "Um produto é referenciado em muitas recomendações"}
+
+enums:
+  role_usuario:
+    values: [admin, trader, rtv]
+  tipo_produto:
+    values: [Defensivo, Fertilizante]
+  canal_origem:
+    values: [WhatsApp, Email, Imagem, Manual]
+  status_pedido:
+    values: ["Rascunho", "Pendente Aprovação", "Aprovado", "Rejeitado", "Devolvido"]
+  tipo_alerta:
+    values: [ProdutoAtipico, VolumetriaAtipica, CondicaoDivergente]
+  severidade_alerta:
+    values: [Baixa, Media, Alta]
+  motivo_recomendacao:
+    values: [Historico, Sazonalidade, MixRegional]

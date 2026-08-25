@@ -1,0 +1,26 @@
+id,nome_comercial,tipo,classe,ingrediente_ativo,unidade,custo,ativo,created_at,updated_at,preco_base
+1,Glifosato Nortox 480 SL,Defensivo,Herbicida,Glifosato,L,147.16,1,2025-05-05T00:00:00,2026-01-30T00:00:00,183.95
+2,Roundup Original DI,Defensivo,Herbicida,Glifosato,L,23.05,1,2025-05-05T00:00:00,2026-01-30T00:00:00,28.81
+3,Priori Xtra,Defensivo,Fungicida,Azoxistrobina + Ciproconazol,L,73.56,1,2025-05-05T00:00:00,2026-01-30T00:00:00,91.95
+4,Fox Xpro,Defensivo,Fungicida,Bixafem + Protioconazol + Trifloxistrobina,L,63.09,1,2025-05-05T00:00:00,2026-01-30T00:00:00,78.86
+5,Engeo Pleno S,Defensivo,Inseticida,Tiametoxam + Lambda-cialotrina,L,166.77,1,2025-05-05T00:00:00,2026-01-30T00:00:00,208.46
+6,Connect,Defensivo,Inseticida,Imidacloprido + Betaciflutrina,L,154.69,1,2025-05-05T00:00:00,2026-01-30T00:00:00,193.36
+7,Talisman,Defensivo,Herbicida,Dicamba,L,198.22,1,2025-05-05T00:00:00,2026-01-30T00:00:00,247.78
+8,Nimbus,Defensivo,Óleo Adjuvante,Óleo Mineral,L,35.56,1,2025-05-05T00:00:00,2026-01-30T00:00:00,44.45
+9,Aproach Prima,Defensivo,Fungicida,Ciproconazol + Picoxistrobina,L,103.23,1,2025-05-05T00:00:00,2026-01-30T00:00:00,129.04
+10,Verdadero,Defensivo,Fungicida,Fluxapiroxade + Piraclostrobina,L,24.02,1,2025-05-05T00:00:00,2026-01-30T00:00:00,30.02
+11,Certero,Defensivo,Herbicida,Cletodim,L,62.16,1,2025-05-05T00:00:00,2026-01-30T00:00:00,77.7
+12,Sumilarv 0.5G,Defensivo,Inseticida,Piriproxifem,kg,120.08,1,2025-05-05T00:00:00,2026-01-30T00:00:00,150.1
+13,Ureia 45%,Fertilizante,Nitrogenado,,t,1863.69,1,2025-05-05T00:00:00,2026-01-30T00:00:00,2329.61
+14,MAP 11-52-00,Fertilizante,Fosfatado,,t,2277.21,1,2025-05-05T00:00:00,2026-01-30T00:00:00,2846.51
+15,KCl 60% (Cloreto de Potássio),Fertilizante,Potássico,,t,3359.72,1,2025-05-05T00:00:00,2026-01-30T00:00:00,4199.65
+16,NPK 08-28-16,Fertilizante,Formulado NPK,,t,3107.86,1,2025-05-05T00:00:00,2026-01-30T00:00:00,3884.82
+17,NPK 20-05-20,Fertilizante,Formulado NPK,,t,2329.06,1,2025-05-05T00:00:00,2026-01-30T00:00:00,2911.32
+18,Sulfato de Amônio,Fertilizante,Nitrogenado,,t,3214.24,1,2025-05-05T00:00:00,2026-01-30T00:00:00,4017.8
+19,Super Simples,Fertilizante,Fosfatado,,t,3742.63,1,2025-05-05T00:00:00,2026-01-30T00:00:00,4678.29
+20,Calcário Dolomítico,Fertilizante,Corretivo de Solo,,t,1815.6,1,2025-05-05T00:00:00,2026-01-30T00:00:00,2269.5
+21,Gesso Agrícola,Fertilizante,Corretivo de Solo,,t,3733.97,1,2025-05-05T00:00:00,2026-01-30T00:00:00,4667.46
+22,Cloreto de Potássio Granulado,Fertilizante,Potássico,,t,3475.53,1,2025-05-05T00:00:00,2026-01-30T00:00:00,4344.41
+23,NPK 12-06-24,Fertilizante,Formulado NPK,,t,2616.6,1,2025-05-05T00:00:00,2026-01-30T00:00:00,3270.75
+24,Boro Granulado,Fertilizante,Micronutriente,,kg,2173.15,1,2025-05-05T00:00:00,2026-01-30T00:00:00,2716.44
+25,Zinco Quelatizado,Fertilizante,Micronutriente,,kg,4097.31,1,2025-05-05T00:00:00,2026-01-30T00:00:00,5121.64

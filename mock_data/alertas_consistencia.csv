@@ -1,0 +1,13 @@
+id,pedido_id,tipo,descricao,severidade,resolvido_por,created_at,updated_at
+1,5,VolumetriaAtipica,Quantidade solicitada está fora do padrão histórico do cliente para este produto.,Baixa,,2025-10-07T00:00:00,2026-02-19T00:00:00
+2,25,ProdutoAtipico,Cliente nunca comprou este produto anteriormente.,Media,,2025-10-27T00:00:00,2026-02-19T00:00:00
+3,8,VolumetriaAtipica,Quantidade solicitada está fora do padrão histórico do cliente para este produto.,Alta,Fernanda Lopes,2025-10-10T00:00:00,2026-02-19T00:00:00
+4,13,CondicaoDivergente,Condição comercial informada diverge da política padrão para a região.,Baixa,Fernanda Lopes,2025-10-15T00:00:00,2026-02-19T00:00:00
+5,24,CondicaoDivergente,Condição comercial informada diverge da política padrão para a região.,Media,Ricardo Nunes,2025-10-26T00:00:00,2026-02-19T00:00:00
+6,7,VolumetriaAtipica,Quantidade solicitada está fora do padrão histórico do cliente para este produto.,Baixa,Marcelo Andrade,2025-10-09T00:00:00,2026-02-19T00:00:00
+7,3,VolumetriaAtipica,Quantidade solicitada está fora do padrão histórico do cliente para este produto.,Media,,2025-10-05T00:00:00,2026-02-19T00:00:00
+8,14,VolumetriaAtipica,Quantidade solicitada está fora do padrão histórico do cliente para este produto.,Media,Fernanda Lopes,2025-10-16T00:00:00,2026-02-19T00:00:00
+9,18,CondicaoDivergente,Condição comercial informada diverge da política padrão para a região.,Alta,Ricardo Nunes,2025-10-20T00:00:00,2026-02-19T00:00:00
+10,11,CondicaoDivergente,Condição comercial informada diverge da política padrão para a região.,Alta,,2025-10-13T00:00:00,2026-02-19T00:00:00
+11,9,CondicaoDivergente,Condição comercial informada diverge da política padrão para a região.,Baixa,Marcelo Andrade,2025-10-11T00:00:00,2026-02-19T00:00:00
+12,23,VolumetriaAtipica,Quantidade solicitada está fora do padrão histórico do cliente para este produto.,Baixa,Fernanda Lopes,2025-10-25T00:00:00,2026-02-19T00:00:00
