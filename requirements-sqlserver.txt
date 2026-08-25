@@ -1,0 +1,11 @@
+# Driver SQL Server / Microsoft Fabric — instalação opcional.
+#
+# Requer as bibliotecas de sistema do ODBC:
+#   Windows : Microsoft ODBC Driver 18 for SQL Server
+#   Debian  : apt-get install unixodbc-dev msodbcsql18
+#
+# NÃO instale no Render: o runtime Python nativo não tem essas libs
+# e o build falha na compilação do pyodbc.
+-r requirements.txt
+
+pyodbc>=5.1.0

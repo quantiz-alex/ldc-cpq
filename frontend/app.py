@@ -174,4 +174,9 @@ def toggle_sidebar(pathname: str, user_data):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=1050)
+    # Execucao local apenas. Em producao (Render) quem serve e o gunicorn,
+    # apontando direto para o objeto `server` definido no topo deste modulo:
+    #   gunicorn frontend.app:server --bind 0.0.0.0:$PORT
+    port = int(os.environ.get("PORT", 1050))
+    debug = os.environ.get("APP_DEBUG", "true").lower() != "false"
+    app.run(host="0.0.0.0", port=port, debug=debug)

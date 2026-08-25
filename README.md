@@ -89,6 +89,56 @@ python -m frontend.app
 
 O app sobe em `http://localhost:1050`.
 
+## Deploy no Render
+
+O repositório traz um blueprint (`render.yaml`) que publica **apenas o frontend Dash**
+como Web Service. É o suficiente para a demo: as telas leem `mock_data/*.csv` com
+pandas e não dependem da API FastAPI.
+
+### Passos
+
+1. No Render: **New + → Blueprint**
+2. Conecte o repositório `quantiz-alex/ldc-cpq` e selecione a branch `main`
+3. O Render lê o `render.yaml` e cria o serviço — clique em **Apply**
+
+Não há variável de ambiente obrigatória. `APP_ENV` e `APP_DEBUG` já vêm definidas
+no blueprint.
+
+### Como o serviço sobe
+
+| Item | Valor |
+| --- | --- |
+| Build | `pip install -r requirements.txt` |
+| Start | `gunicorn frontend.app:server --bind 0.0.0.0:$PORT --workers 1` |
+| Objeto WSGI | `server = app.server`, em `frontend/app.py` |
+| Python | fixado em `.python-version` |
+| Health check | `/` |
+
+### Limitações conhecidas (plano free)
+
+- **Disco efêmero.** As telas de Captação, Fila de Validação e Administração gravam
+  de volta nos CSVs (`to_csv`). Esse conteúdo é perdido a cada deploy, restart ou
+  hibernação — os dados voltam ao estado versionado no repositório.
+- **`--workers 1` é obrigatório.** Dois processos gravando no mesmo CSV corrompem o
+  arquivo. Não aumente o número de workers enquanto a persistência for em CSV.
+- **Hibernação.** O serviço dorme após ~15 min sem tráfego; o primeiro acesso
+  seguinte leva algumas dezenas de segundos para responder.
+- **Login sem senha.** A autenticação valida apenas se o email existe em
+  `mock_data/usuarios.csv` (ver seção *Autenticação*). Numa URL pública, qualquer
+  pessoa que saiba um dos emails entra.
+
+### Dependências e o `pyodbc`
+
+`pyodbc` foi movido para `requirements-sqlserver.txt`. Ele exige unixODBC e o
+Microsoft ODBC Driver 18 (bibliotecas de sistema) e **falha ao compilar** no runtime
+Python do Render. Como nada em produção usa SQL Server hoje, ele sai do caminho:
+
+```bash
+pip install -r requirements.txt              # runtime (é o que o Render usa)
+pip install -r requirements-dev.txt          # + pytest, httpx, requests
+pip install -r requirements-sqlserver.txt    # + pyodbc (local, para SQL Server/Fabric)
+```
+
 ## Páginas Disponíveis
 
 | Módulo | Rota | Descrição |

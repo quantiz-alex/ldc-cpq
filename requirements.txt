@@ -1,28 +1,36 @@
-# Frontend — Dash
-dash>=2.17.0
-dash-bootstrap-components>=1.6.0
-dash-ag-grid>=31.2.0
-plotly>=5.22.0
-pandas>=2.2.0
-numpy>=1.26.0
+# ============================================================
+# Dependências de runtime — versões fixadas nas testadas localmente.
+#
+# pyodbc NÃO está aqui: exige unixODBC + Microsoft ODBC Driver 18
+# (bibliotecas de sistema) e falha ao compilar no runtime Python do
+# Render. Como o app roda sobre mock_data/*.csv, ele não é necessário.
+# Para conectar em SQL Server / Fabric: pip install -r requirements-sqlserver.txt
+# ============================================================
 
-# Backend — FastAPI
-fastapi>=0.111.0
-uvicorn[standard]>=0.30.0
-sqlalchemy>=2.0.30
-pydantic>=2.7.0
-pydantic-settings>=2.3.0
+# --- Servidor WSGI (produção / Render) ---
+gunicorn>=23.0.0
 
-# Autenticação
-python-jose[cryptography]>=3.3.0
-passlib[bcrypt]>=1.7.4
-python-multipart>=0.0.9
+# --- Frontend — Dash ---
+dash==4.4.1
+dash-bootstrap-components==2.0.4
+dash-ag-grid==35.3.0
+plotly==6.9.0
+pandas==3.0.5
+numpy==2.5.2
+PyYAML==6.0.3
 
-# Banco de dados
-pyodbc>=5.1.0
-python-dotenv>=1.0.1
+# --- Backend — FastAPI ---
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+sqlalchemy==2.0.52
+pydantic==2.13.4
+pydantic-settings==2.15.0
 
-# Testes
-pytest>=8.2.0
-httpx>=0.27.0
-requests>=2.32.0
+# --- Autenticação ---
+python-jose[cryptography]==3.5.0
+passlib[bcrypt]==1.7.4
+bcrypt==5.0.0
+python-multipart==0.0.32
+
+# --- Utilitários ---
+python-dotenv==1.2.3

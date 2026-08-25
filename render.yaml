@@ -1,0 +1,32 @@
+# ============================================================
+# Render Blueprint — LDC Insumos, Plataforma Comercial (CPQ)
+#
+# Publica o frontend Dash como Web Service único.
+# Os dados vêm de mock_data/*.csv (versionados no repositório).
+#
+# ATENÇÃO — disco efêmero: as telas de captação e validação gravam
+# de volta nos CSVs (to_csv). No Render esse conteúdo é perdido a
+# cada deploy, restart ou wake-up após hibernação. Comportamento
+# aceito para demo. --workers 1 é obrigatório: dois workers gravando
+# no mesmo CSV corrompem o arquivo.
+# ============================================================
+services:
+  - type: web
+    name: ldc-cpq
+    runtime: python
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: >-
+      gunicorn frontend.app:server
+      --bind 0.0.0.0:$PORT
+      --workers 1
+      --threads 4
+      --timeout 120
+      --access-logfile -
+    healthCheckPath: /
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"

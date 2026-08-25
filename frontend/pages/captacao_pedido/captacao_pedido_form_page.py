@@ -103,4 +103,5 @@ dash.register_page(
     path="/captacao-pedido/novo-pedido",
     title="Pedido — Captação (CPQ)",
     name="Novo Pedido",
+    layout=layout,
 )
