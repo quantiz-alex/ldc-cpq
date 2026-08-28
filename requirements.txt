@@ -32,5 +32,8 @@ passlib[bcrypt]==1.7.4
 bcrypt==5.0.0
 python-multipart==0.0.32
 
+# --- IA (Captura Assistida) ---
+anthropic==1.2.0
+
 # --- Utilitários ---
 python-dotenv==1.2.3

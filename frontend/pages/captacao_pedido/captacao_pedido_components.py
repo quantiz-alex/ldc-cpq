@@ -29,6 +29,16 @@ FORMATO_ENTREGA_OPTIONS = [
     {"label": "Entrega Programada", "value": "Entrega Programada"},
 ]
 
+# Locais de entrega — lista fechada (instalações da LDC + propriedade do cliente),
+# não é texto livre por cliente: não há cadastro de endereço por cliente no sistema.
+LOCAL_ENTREGA_OPTIONS = [
+    {"label": "Armazém Fazenda", "value": "Armazém Fazenda"},
+    {"label": "Casa", "value": "Casa"},
+    {"label": "Filial LDC Rondonópolis", "value": "Filial LDC Rondonópolis"},
+    {"label": "Filial LDC Sorriso", "value": "Filial LDC Sorriso"},
+    {"label": "Porto Seco Rio Verde", "value": "Porto Seco Rio Verde"},
+]
+
 
 def build_grid_rascunhos(df: pd.DataFrame) -> dbc.Card:
     """Grid de pedidos em aberto (Rascunho/Pendente Aprovação/Devolvido) do RTV logado.
@@ -298,7 +308,10 @@ def build_form_item() -> dbc.Card:
             dbc.Col(
                 [
                     dbc.Label("Local de Entrega *", className="small fw-semibold"),
-                    dbc.Input(id="captacao-pedido-form-local-entrega", type="text"),
+                    dbc.Select(
+                        id="captacao-pedido-form-local-entrega",
+                        options=LOCAL_ENTREGA_OPTIONS,
+                    ),
                 ],
                 md=8,
                 className="mt-2",
@@ -367,8 +380,9 @@ def build_modal_captura_assistida() -> dbc.Modal:
             dbc.ModalBody(
                 [
                     html.P(
-                        "Cole o texto da mensagem (WhatsApp/e-mail) recebida do cliente. "
-                        "O sistema gera um rascunho para sua revisão — nunca cria pedido "
+                        "Cole o texto e/ou anexe um print da mensagem (WhatsApp/e-mail) "
+                        "recebida do cliente. A IA sugere produtos e quantidades para você "
+                        "revisar — o sistema gera um rascunho e nunca cria pedido "
                         "diretamente (RN-005).",
                         className="text-muted small",
                     ),
@@ -376,8 +390,19 @@ def build_modal_captura_assistida() -> dbc.Modal:
                     dbc.Select(
                         id="captacao-pedido-captura-canal", options=CANAL_ORIGEM_OPTIONS, value="WhatsApp"
                     ),
-                    dbc.Label("Conteúdo da Mensagem *", className="small fw-semibold mt-2"),
+                    dbc.Label("Conteúdo da Mensagem", className="small fw-semibold mt-2"),
                     dbc.Textarea(id="captacao-pedido-captura-texto", rows=5),
+                    dbc.Label("Imagem (opcional)", className="small fw-semibold mt-2"),
+                    dcc.Upload(
+                        id="captacao-pedido-captura-upload",
+                        accept="image/*",
+                        children=html.Div(
+                            "Arraste uma imagem ou clique para selecionar",
+                            className="text-muted small",
+                        ),
+                        className="border rounded p-3 text-center",
+                    ),
+                    html.Div(id="captacao-pedido-captura-upload-preview", className="mt-2"),
                 ]
             ),
             dbc.ModalFooter(
@@ -400,4 +425,160 @@ def build_modal_captura_assistida() -> dbc.Modal:
         id="captacao-pedido-modal-captura-assistida",
         is_open=False,
         centered=True,
+    )
+
+
+def build_linhas_sugestoes_ia(sugestoes: list[dict]) -> list:
+    """Linhas editáveis (produto/quantidade/remover) da tabela de sugestões da IA.
+
+    Reconstruída por inteiro a cada alteração (remoção de linha) — os ids são
+    casados por padrão pela posição na lista atual em `sugestoes`, não por um
+    índice original fixo (ver captacao_pedido_form_callbacks.py).
+    """
+    if not sugestoes:
+        return [html.P("Nenhum item sugerido restante — adicione manualmente.", className="text-muted small mb-0")]
+
+    linhas = [
+        dbc.Row(
+            [
+                dbc.Col("Produto", md=6, className="small fw-semibold text-muted"),
+                dbc.Col("Quantidade", md=3, className="small fw-semibold text-muted"),
+                dbc.Col("", md=3),
+            ],
+            className="g-2",
+        )
+    ]
+    for i, item in enumerate(sugestoes):
+        reconhecido = item.get("produto_id") is not None
+        linhas.append(
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.Select(
+                            id={"type": "sugestao-ia-produto", "index": i},
+                            options=opcoes_produtos(),
+                            value=item.get("produto_id"),
+                            placeholder=item.get("produto_nome_extraido") or "Selecione o produto",
+                            invalid=not reconhecido,
+                        ),
+                        md=6,
+                    ),
+                    dbc.Col(
+                        dbc.Input(
+                            id={"type": "sugestao-ia-quantidade", "index": i},
+                            type="number",
+                            min=0,
+                            value=item.get("quantidade"),
+                        ),
+                        md=3,
+                    ),
+                    dbc.Col(
+                        dbc.Button(
+                            html.I(className="bi bi-trash"),
+                            id={"type": "sugestao-ia-remover-btn", "index": i},
+                            color="danger",
+                            outline=True,
+                            size="sm",
+                        ),
+                        md=3,
+                    ),
+                ],
+                align="center",
+                className="g-2 mt-1",
+            )
+        )
+    return linhas
+
+
+def build_modal_sugestoes_ia(sugestoes: list[dict]) -> dbc.Modal:
+    """RN-005 — revisão em lote das sugestões da IA (Captura Assistida).
+
+    O RTV ajusta produto/quantidade linha a linha, remove o que não servir,
+    define as condições comerciais do lote (aplicadas a todos os itens
+    confirmados) e clica "Adicionar Itens ao Pedido" — cada item passa pelo
+    `adicionar_item` já existente, sem nenhuma mudança em RN-003/RN-004.
+    """
+    return dbc.Modal(
+        [
+            dbc.ModalHeader(dbc.ModalTitle("Sugestões da IA — Revisar Itens"), close_button=True),
+            dbc.ModalBody(
+                [
+                    html.P(
+                        "Ajuste produto e quantidade, remova o que não servir e "
+                        "defina as condições comerciais do lote antes de adicionar "
+                        "ao pedido (RN-005 — revisão humana obrigatória).",
+                        className="text-muted small",
+                    ),
+                    html.Div(
+                        id="captacao-pedido-modal-sugestoes-tabela",
+                        children=build_linhas_sugestoes_ia(sugestoes),
+                    ),
+                    html.Hr(),
+                    dbc.Label("Condições comerciais do lote *", className="small fw-semibold"),
+                    dbc.Row(
+                        [
+                            dbc.Col(
+                                dbc.Input(
+                                    id="captacao-pedido-sugestoes-janela-mes",
+                                    type="number", min=1, max=12, placeholder="Mês",
+                                ),
+                                md=2,
+                            ),
+                            dbc.Col(
+                                dbc.Input(
+                                    id="captacao-pedido-sugestoes-janela-ano",
+                                    type="number", min=2024, placeholder="Ano",
+                                ),
+                                md=2,
+                            ),
+                            dbc.Col(
+                                dbc.Select(
+                                    id="captacao-pedido-sugestoes-formato-entrega",
+                                    options=FORMATO_ENTREGA_OPTIONS,
+                                    placeholder="Formato de Entrega",
+                                ),
+                                md=3,
+                            ),
+                            dbc.Col(
+                                dbc.Select(
+                                    id="captacao-pedido-sugestoes-condicao-pagamento",
+                                    options=opcoes_condicao_pagamento(),
+                                    placeholder="Condição de Pagamento",
+                                ),
+                                md=3,
+                            ),
+                            dbc.Col(
+                                dbc.Select(
+                                    id="captacao-pedido-sugestoes-local-entrega",
+                                    options=LOCAL_ENTREGA_OPTIONS,
+                                    placeholder="Local de Entrega",
+                                ),
+                                md=2,
+                            ),
+                        ],
+                        className="g-2 mt-1",
+                    ),
+                ]
+            ),
+            dbc.ModalFooter(
+                [
+                    dbc.Button(
+                        "Cancelar",
+                        id="captacao-pedido-btn-cancelar-sugestoes-ia",
+                        color="secondary",
+                        outline=True,
+                        className="me-2",
+                    ),
+                    dbc.Button(
+                        "Adicionar Itens ao Pedido",
+                        id="captacao-pedido-btn-confirmar-sugestoes-ia",
+                        color="primary",
+                    ),
+                ]
+            ),
+        ],
+        id="captacao-pedido-modal-sugestoes-ia",
+        is_open=bool(sugestoes),
+        centered=True,
+        size="lg",
     )

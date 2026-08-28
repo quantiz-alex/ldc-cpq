@@ -22,4 +22,4 @@ id,cliente_id,rtv_id,cultura_safra,canal_origem,valor_total,observacoes,status,a
 23,10.0,7,Cana-de-açúcar 2025/2026,Manual,1843.52,,Rejeitado,Fernanda Lopes,2026-08-01T10:54:32,Condição comercial divergente do praticado para a região. Rejeitado.,2026-07-25T10:54:32,2026-08-01T10:54:32
 24,13.0,10,Milho 2025/2026,WhatsApp,170277.5,"Pedido captado via canal informal, revisado pelo RTV.",Devolvido,Ricardo Nunes,2026-08-04T05:27:16,Cliente nunca comprou este defensivo — favor confirmar quantidade antes de reenviar.,2026-08-02T05:27:16,2026-08-04T05:27:16
 25,16.0,5,Soja/Milho (safrinha) 2025/2026,Email,4373.18,"Pedido captado via canal informal, revisado pelo RTV.",Rascunho,,,,2026-08-10T00:00:00,2026-08-10T00:00:00
-26,,1,,Imagem,0.0,[Captura assistida] Teste ,Rascunho,,,,2026-08-25T15:21:50,2026-08-25T15:21:50
+26,2.0,1,Algodão (próxima safra),WhatsApp,0.0,[Captura assistida] Pedido da Fazenda Santa Luzia para a próxima safra de algodão: 300 litros de Priori Xtra e 15 toneladas de Ureia 45%.,Rascunho,,,,2026-08-28T11:12:36,2026-08-28T11:12:36

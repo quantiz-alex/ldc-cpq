@@ -13,11 +13,15 @@ troca de rota.
 """
 from __future__ import annotations
 
+import json
+from urllib.parse import quote
+
 from dash.exceptions import PreventUpdate
 
-from dash import Input, Output, State, callback, ctx, no_update
+from dash import Input, Output, State, callback, ctx, html, no_update
 
 from frontend.pages.captacao_pedido.captacao_pedido_components import build_grid_rascunhos
+from frontend.pages.captacao_pedido.captacao_pedido_ia import extrair_pedido_de_mensagem
 from frontend.pages.captacao_pedido.captacao_pedido_queries import (
     carregar_pedidos_em_aberto,
     criar_pedido_rascunho,
@@ -80,6 +84,17 @@ def register_callbacks() -> None:
         )
         return _ROTA_FORM, f"?pedido_id={pedido_id}"
 
+    # ── Captura Assistida — prévia do arquivo anexado ──────────────────────────
+    @callback(
+        Output("captacao-pedido-captura-upload-preview", "children"),
+        Input("captacao-pedido-captura-upload", "contents"),
+        prevent_initial_call=True,
+    )
+    def mostrar_preview_upload(contents: str | None):
+        if not contents:
+            return None
+        return html.Img(src=contents, style={"maxHeight": "160px", "maxWidth": "100%"}, className="rounded border")
+
     # ── Captura Assistida — abrir/fechar modal (RN-005) ────────────────────────
     @callback(
         Output("captacao-pedido-modal-captura-assistida", "is_open"),
@@ -101,27 +116,49 @@ def register_callbacks() -> None:
         Input("captacao-pedido-btn-confirmar-captura", "n_clicks"),
         State("captacao-pedido-captura-canal", "value"),
         State("captacao-pedido-captura-texto", "value"),
+        State("captacao-pedido-captura-upload", "contents"),
         State("current-user", "data"),
         prevent_initial_call=True,
     )
     def confirmar_captura_assistida(
-        n_clicks: int, canal: str | None, texto: str | None, user_data: dict | None
+        n_clicks: int,
+        canal: str | None,
+        texto: str | None,
+        upload_contents: str | None,
+        user_data: dict | None,
     ):
         if not n_clicks:
             return no_update, no_update, False, "", "success"
-        if not texto:
+        if not texto and not upload_contents:
             return (
                 no_update, no_update, True,
-                "Cole o conteúdo da mensagem antes de gerar o rascunho.", "warning",
+                "Cole o conteúdo da mensagem e/ou anexe uma imagem antes de gerar o rascunho.",
+                "warning",
             )
         if not user_data or not user_data.get("id"):
             return no_update, no_update, True, "Faça login para gerar o rascunho.", "warning"
 
+        imagem_media_type = imagem_base64 = None
+        if upload_contents:
+            # dcc.Upload entrega uma data URI "data:<media_type>;base64,<dados>".
+            cabecalho, imagem_base64 = upload_contents.split(",", 1)
+            imagem_media_type = cabecalho.split(";")[0].removeprefix("data:")
+
+        sucesso, extraido, erro = extrair_pedido_de_mensagem(texto, imagem_base64, imagem_media_type)
+        if not sucesso:
+            return no_update, no_update, True, erro, "warning"
+
         pedido_id = criar_pedido_rascunho(
-            cliente_id=None,  # type: ignore[arg-type]
+            cliente_id=extraido.get("cliente_id"),  # type: ignore[arg-type]
             rtv_id=user_data["id"],
-            cultura_safra=None,
+            cultura_safra=extraido.get("cultura_safra"),
             canal_origem=canal or "WhatsApp",
-            observacoes=f"[Captura assistida] {texto}",
+            observacoes=f"[Captura assistida] {extraido.get('resumo', '')}",
         )
-        return _ROTA_FORM, f"?pedido_id={pedido_id}", no_update, no_update, no_update
+
+        sugestoes_encoded = quote(json.dumps(extraido.get("itens") or []))
+        return (
+            _ROTA_FORM,
+            f"?pedido_id={pedido_id}&ia_sugestoes={sugestoes_encoded}",
+            no_update, no_update, no_update,
+        )

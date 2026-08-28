@@ -8,6 +8,9 @@ de rota em um app multi-página.
 """
 from __future__ import annotations
 
+import json
+from urllib.parse import unquote
+
 import dash
 import dash_bootstrap_components as dbc
 from dash import dcc, html
@@ -19,6 +22,7 @@ from frontend.pages.captacao_pedido.captacao_pedido_components import (
     build_form_item,
     build_grid_itens,
     build_modal_confirmar_saida,
+    build_modal_sugestoes_ia,
 )
 from frontend.pages.captacao_pedido.captacao_pedido_queries import (
     carregar_cabecalho_pedido,
@@ -26,22 +30,37 @@ from frontend.pages.captacao_pedido.captacao_pedido_queries import (
 )
 
 STORE_PEDIDO_ID = "captacao-pedido-store-pedido-ativo"
+STORE_SUGESTOES_IA = "captacao-pedido-store-sugestoes-ia"
 
 
-def layout(pedido_id: str | None = None, **kwargs) -> html.Div:
-    """Monta o formulário do pedido indicado por ?pedido_id= (já populado)."""
+def layout(pedido_id: str | None = None, ia_sugestoes: str | None = None, **kwargs) -> html.Div:
+    """Monta o formulário do pedido indicado por ?pedido_id= (já populado).
+
+    `ia_sugestoes`, quando presente na query string (redirecionado pela Captura
+    Assistida — RN-005), traz a lista de itens sugeridos pela IA em JSON; nada
+    aqui é persistido, só exibido para o RTV pré-preencher "Adicionar Item".
+    """
     pedido_id_int = int(pedido_id) if pedido_id else None
     cabecalho = carregar_cabecalho_pedido(pedido_id_int) if pedido_id_int else {}
     df_itens = carregar_itens_pedido(pedido_id_int if pedido_id_int is not None else -1)
+
+    sugestoes_ia: list[dict] = []
+    if ia_sugestoes:
+        try:
+            sugestoes_ia = json.loads(unquote(ia_sugestoes))
+        except (ValueError, TypeError):
+            sugestoes_ia = []
 
     titulo = f"Pedido #{pedido_id_int}" if pedido_id_int else "Novo Pedido"
 
     content = [
         dcc.Store(id=STORE_PEDIDO_ID, data=pedido_id_int),
+        dcc.Store(id=STORE_SUGESTOES_IA, data=sugestoes_ia),
         html.Div(
             id="captacao-pedido-form-cabecalho-col",
             children=build_form_cabecalho(cabecalho),
         ),
+        build_modal_sugestoes_ia(sugestoes_ia),
         html.Div(
             id="captacao-pedido-form-item-col",
             children=build_form_item(),
